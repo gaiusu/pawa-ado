@@ -193,7 +193,7 @@ select#rank-select{width:200px;}
 }
 .slot-row{
   display:grid;
-  grid-template-columns:54px 1fr 1fr 92px;
+  grid-template-columns:54px 1fr 92px;
   grid-template-rows:auto auto;
   gap:14px 14px;
   align-items:center;
@@ -202,6 +202,7 @@ select#rank-select{width:200px;}
   position:relative;
 }
 .slot-row:last-child{border-bottom:none;}
+.recipe-field select{font-size:15px;}
 .complete-toggle-row{
   grid-column:1 / -1;
   padding-left:68px;
@@ -520,6 +521,70 @@ button.primary:active{transform:translateY(1px);}
 .combo-list::-webkit-scrollbar{width:6px;}
 .combo-list::-webkit-scrollbar-thumb{background:var(--steel-600); border-radius:3px;}
 
+/* ---------- achievable score list ---------- */
+.score-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.score-item{
+  border:1px solid var(--steel-700);
+  border-radius:var(--radius);
+  background:var(--steel-900);
+  overflow:hidden;
+}
+.score-row-btn{
+  width:100%;
+  display:grid;
+  grid-template-columns:32px 1fr auto 20px;
+  align-items:center;
+  gap:14px;
+  background:none;
+  border:none;
+  color:var(--steel-100);
+  font-family:var(--sans);
+  padding:14px 16px;
+  cursor:pointer;
+  text-align:left;
+  transition:background .12s;
+}
+.score-row-btn:hover{background:var(--steel-800);}
+.score-row-rank{
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--steel-600);
+}
+.score-row-value{
+  font-family:var(--serif);
+  font-size:22px;
+  font-weight:700;
+  color:var(--ember);
+}
+.score-row-count{
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--steel-300);
+  white-space:nowrap;
+}
+.score-row-caret{
+  font-size:12px;
+  color:var(--steel-600);
+  transition:transform .2s;
+}
+.score-row-btn.open .score-row-caret{transform:rotate(180deg); color:var(--ember);}
+.score-row-detail{
+  max-height:0;
+  overflow:hidden;
+  transition:max-height .25s ease;
+  padding:0 16px;
+}
+.score-row-detail.open{
+  max-height:600px;
+  overflow-y:auto;
+  padding:4px 16px 16px;
+}
+.score-row-detail .combo-list{ max-height:none; }
+
 .combo-card{
   display:grid;
   grid-template-columns:36px 1fr auto;
@@ -644,7 +709,8 @@ footer{
   <nav class="tabs">
     <button class="tab-btn active" data-tab="calc"><span class="num">01</span>スコア計算</button>
     <button class="tab-btn" data-tab="target"><span class="num">02</span>差分スコア逆算</button>
-    <button class="tab-btn" data-tab="rules"><span class="num">03</span>ルール・定義一覧</button>
+    <button class="tab-btn" data-tab="achievable"><span class="num">03</span>達成可能スコア一覧</button>
+    <button class="tab-btn" data-tab="rules"><span class="num">04</span>ルール・定義一覧</button>
   </nav>
 
   <!-- ============ PANEL 1: 計算 ============ -->
@@ -731,7 +797,19 @@ footer{
 
   </section>
 
-  <!-- ============ PANEL 3: ルール ============ -->
+  <!-- ============ PANEL 3: 達成可能スコア一覧 ============ -->
+  <section class="panel" id="panel-achievable">
+
+    <div class="card">
+      <h2 class="card-title">今の手持ちで到達できるスコア一覧 <span class="tag">ALL SCORES</span></h2>
+      <p class="card-desc">「スコア計算」タブに入力されているアクティブ3枚とストック（空欄を除く）から、<strong>交換ルール</strong>と<strong>完成／未完成の選択</strong>を組み合わせて到達できる合計スコアを、降順の一覧で表示します。スコアをクリックすると、その点数を実現する組み合わせがすべて展開されます。</p>
+      <button class="primary" id="achievable-search-btn">手持ちから一覧を作る</button>
+      <div class="target-result" id="achievable-result" style="margin-top:20px;"></div>
+    </div>
+
+  </section>
+
+  <!-- ============ PANEL 4: ルール ============ -->
   <section class="panel" id="panel-rules">
 
     <div class="card">
@@ -755,26 +833,30 @@ footer{
             <tr><td>指輪</td><td class="num">1</td></tr>
             <tr><td>チャーム</td><td class="num">2</td></tr>
             <tr><td>腕輪</td><td class="num">3</td></tr>
-            <tr><td>首輪</td><td class="num">5</td></tr>
+            <tr><td>首飾り</td><td class="num">5</td></tr>
             <tr><td>カカシ</td><td class="num">隣接参照</td></tr>
           </tbody>
         </table>
         <table class="score-table">
           <thead><tr><th>金レシピ（全形）</th><th>スコア</th></tr></thead>
           <tbody>
-            <tr><td>金・指輪／チャーム／腕輪／首輪／カカシ</td><td class="num">10（固定）</td></tr>
+            <tr><td>金・指輪／チャーム／腕輪／首飾り／カカシ</td><td class="num">10（固定）</td></tr>
           </tbody>
         </table>
       </div>
       <div class="note-block">
         <strong>カカシの参照ルール（赤・青・黄・緑カカシ）</strong>
         <ul>
-          <li>カカシが<strong>1枠目（最上段）</strong>にある場合 → 2枠目（直下）のスコアのみを参照</li>
-          <li>カカシが<strong>3枠目（最下段）</strong>にある場合 → 2枠目（直上）のスコアのみを参照</li>
-          <li>カカシが<strong>2枠目（中段）</strong>にある場合 → 1枠目と3枠目のスコアの合計を参照</li>
-          <li>参照して決まった値が、そのカカシ自身の基礎スコアになります（1枠目にある場合はその後さらに2倍）</li>
+          <li>カカシが<strong>1枠目（最上段）</strong>にある場合 → 2枠目（直下）のスコアを参照</li>
+          <li>カカシが<strong>3枠目（最下段）</strong>にある場合 → 2枠目（直上）のスコアをそのまま参照</li>
+          <li>カカシが<strong>2枠目（中段）</strong>にある場合 → 1枠目のスコア（2倍適用後）と3枠目のスコアの合計を参照</li>
+          <li><strong>1枠目（最上段）は、確定したスコアを必ず2倍にします。</strong>これは1枠目が通常レシピでもカカシでも同じです。他の枠が1枠目を参照する際は、この2倍後の値を使います。</li>
+          <li>確定の順番は基本「1枠目→2枠目→3枠目」ですが、<strong>1枠目と2枠目が両方カカシの場合だけ「3枠目→2枠目→1枠目」の順</strong>で確定します（3枠すべてがカカシの場合は基礎スコアの合計が0になります）。</li>
           <li>金カカシは隣接参照ではなく固定10点</li>
         </ul>
+      </div>
+      <div class="note-block" style="margin-top:14px;">
+        <strong>最高値の例</strong>：1枠目に金腕輪（10点→2倍で20）、2枠目に緑カカシ（1枠目の20を参照→20）、3枠目に緑カカシ（2枠目の20をそのまま参照→20）を置くと、基礎合計60＋色ボーナス＋形ボーナス（1級なら各+4）＝<strong>68点</strong>が最高値です。
       </div>
     </div>
 
@@ -803,8 +885,8 @@ footer{
       <div class="note-block">
         <ul>
           <li>アクティブスロットに置かれている鍛冶レシピは、あえて<strong>完成させずスコア化しない</strong>ことを選べます。</li>
-          <li>未完成にした枠の<strong>最終加算スコアは0</strong>になります（1枠目であっても2倍は適用されません）。</li>
-          <li>未完成にしても、その枠に置かれているレシピの<strong>色・形はそのまま存在する</strong>ため、<strong>カカシの隣接参照には影響しません</strong>（参照値は通常通り計算されます）。</li>
+          <li>未完成にした枠の<strong>最終加算スコアは0</strong>になります。</li>
+          <li>未完成にしても、その枠に置かれているレシピの<strong>色・形・参照用のスコアはそのまま存在する</strong>ため、<strong>カカシの隣接参照には影響しません</strong>（1枠目が未完成でも、他の枠から参照されるときは2倍後の値が使われます）。</li>
           <li>未完成の枠は<strong>同色・同形ボーナスの判定対象から外れます</strong>（完成している枠だけでカウントします）。</li>
           <li>3枠のうち何枚を未完成にするかは自由（1枚〜3枚まで選べます）。</li>
         </ul>
@@ -815,10 +897,10 @@ footer{
       <h2 class="card-title">計算の順番（このツールの処理）</h2>
       <div class="note-block">
         <ol style="margin:0; padding-left:20px;">
-          <li>各枠のレシピの基礎スコアを決定（金固定10点／通常レシピは表の固定値／カカシは隣接参照）</li>
-          <li>カカシがある場合、隣接する枠の基礎スコアを参照して確定させる（完成・未完成に関わらず参照される）</li>
-          <li>完成している枠のみ、1枠目（最上段）なら2倍にする</li>
-          <li>未完成の枠は最終加算スコアを0とする</li>
+          <li>各枠のレシピの基礎スコアを、基本は「1枠目→2枠目→3枠目」の順で確定する（金固定10点／通常レシピは表の固定値／カカシは隣接参照）</li>
+          <li>1枠目と2枠目が両方カカシの場合のみ、確定の順を「3枠目→2枠目→1枠目」に切り替える</li>
+          <li>1枠目が確定したら、その値を必ず2倍する（通常レシピでもカカシでも）。これは完成・未完成に関わらず参照用の値としても使われる</li>
+          <li>未完成の枠は最終加算スコアを0とする（完成している枠だけが加算される）</li>
           <li>1〜3枠目の最終加算スコアの合計を出す（基礎合計）</li>
           <li>完成している枠だけで色ボーナス・形ボーナスを判定し、ランクに応じた値を加算する</li>
           <li>基礎合計＋色ボーナス＋形ボーナス＝獲得鍛冶スコア</li>
@@ -836,9 +918,24 @@ footer{
 
 <script>
 const COLORS = ["赤","青","黄","緑","金"];
-const SHAPES = ["カカシ","指輪","チャーム","腕輪","首輪"];
-const BASE = {"指輪":1,"チャーム":2,"腕輪":3,"首輪":5};
+const SHAPES = ["カカシ","指輪","チャーム","腕輪","首飾り"];
+const BASE = {"指輪":1,"チャーム":2,"腕輪":3,"首飾り":5};
 const RANK_BONUS = {"4":1,"3":2,"2":3,"1":4};
+
+// 色×形の全25種類（色グループごとにまとめて表示順を作る）
+const ALL_RECIPES = [];
+COLORS.forEach(c=>{
+  SHAPES.forEach(s=>{
+    ALL_RECIPES.push({color:c, shape:s, key:c+s});
+  });
+});
+
+function recipeOptionsHTML(selectedKey){
+  return ALL_RECIPES.map(r=>{
+    const sel = r.key === selectedKey ? ' selected' : '';
+    return `<option value="${r.key}" data-color="${r.color}" data-shape="${r.shape}"${sel}>${r.color}${r.shape}</option>`;
+  }).join('');
+}
 
 function baseScoreOf(color, shape){
   if(color === "金") return 10;
@@ -848,34 +945,57 @@ function baseScoreOf(color, shape){
 
 // slots: [{color,shape,completed}, ...] index0=top,1=mid,2=bottom
 // completed省略時はtrue（完成）扱い
+//
+// カカシの参照ルール：
+//   基本の確定順序は「1枠目 → 2枠目 → 3枠目」（上から下）。
+//     1枠目：カカシでなければ通常の基礎スコア。カカシなら2枠目を参照（このとき2枠目はまだ未確定の場合があるが、
+//            1枠目・2枠目が同時にカカシのケースだけ例外処理に切り替えるため、通常はここで2枠目が確定可能）。
+//            確定したら、1枠目は常にその値を2倍する（完成/未完成に関わらず、参照用の値としても2倍後を使う）。
+//     2枠目：カカシでなければ通常の基礎スコア。カカシなら「1枠目（確定済み・2倍後）＋3枠目」を参照。
+//     3枠目：カカシでなければ通常の基礎スコア。カカシなら2枠目（確定済み）をそのまま参照。
+//
+//   例外：1枠目・2枠目が両方カカシの場合（互いに参照し合うため）は、確定順序を「3枠目 → 2枠目 → 1枠目」に切り替える。
+//     3枠目：カカシでなければ通常の基礎スコア。カカシなら2枠目（まだ未確定なので0扱い）を参照。
+//     2枠目：カカシなので「1枠目（まだ未確定なので0扱い）＋3枠目（確定済み）」を参照。
+//     1枠目：カカシなので2枠目（確定済み）をそのまま参照し、2倍する。
+//   ※ この例外ルールの結果、3枠すべてがカカシの場合は合計0となる。
 function calcScore(slots, rankKey){
   const raw = [null,null,null];
-  slots.forEach((s,i)=>{
-    if(s.shape === "カカシ" && s.color !== "金"){
-      raw[i] = null;
+  const isKakashi = (s) => s.shape === "カカシ" && s.color !== "金";
+
+  if(isKakashi(slots[0]) && isKakashi(slots[1])){
+    // 例外ルート：3枠目 → 2枠目 → 1枠目
+    raw[2] = isKakashi(slots[2]) ? 0 : baseScoreOf(slots[2].color, slots[2].shape);
+    raw[1] = 0 + raw[2]; // 1枠目はまだ未確定なので0扱い
+    raw[0] = raw[1];
+    raw[0] = raw[0] * 2;
+  } else {
+    // 通常ルート：1枠目 → 2枠目 → 3枠目
+    raw[0] = isKakashi(slots[0]) ? null : baseScoreOf(slots[0].color, slots[0].shape);
+    if(isKakashi(slots[0])){
+      // 2枠目を先に解決する必要がある（2枠目はカカシではない前提＝上のif分岐で除外済み）
+      const v1 = baseScoreOf(slots[1].color, slots[1].shape);
+      raw[0] = v1;
+    }
+    raw[0] = raw[0] * 2;
+
+    if(isKakashi(slots[1])){
+      raw[1] = raw[0] + (isKakashi(slots[2]) ? 0 : baseScoreOf(slots[2].color, slots[2].shape));
     } else {
-      raw[i] = baseScoreOf(s.color, s.shape);
+      raw[1] = baseScoreOf(slots[1].color, slots[1].shape);
     }
-  });
 
-  // カカシ参照解決（金以外）。完成・未完成に関わらずraw値は常に隣接参照に使われる。
-  slots.forEach((s,i)=>{
-    if(s.shape === "カカシ" && s.color !== "金"){
-      if(i === 0){
-        raw[i] = raw[1] !== null ? raw[1] : 0;
-      } else if(i === 2){
-        raw[i] = raw[1] !== null ? raw[1] : 0;
-      } else {
-        const v1 = raw[0] !== null ? raw[0] : 0;
-        const v3 = raw[2] !== null ? raw[2] : 0;
-        raw[i] = v1 + v3;
-      }
+    if(isKakashi(slots[2])){
+      raw[2] = raw[1];
+    } else {
+      raw[2] = baseScoreOf(slots[2].color, slots[2].shape);
     }
-  });
+  }
 
-  // 完成している枠だけが最終加算スコアを持つ。未完成は0（1枠目の2倍も適用されない）。
+  // 完成している枠だけが最終加算スコアを持つ。未完成は0。
+  // 1枠目のrawは既に2倍後の値が入っているため、ここでは追加の2倍は行わない。
   const finalScores = [
-    (slots[0].completed === false) ? 0 : raw[0]*2,
+    (slots[0].completed === false) ? 0 : raw[0],
     (slots[1].completed === false) ? 0 : raw[1],
     (slots[2].completed === false) ? 0 : raw[2]
   ];
@@ -900,22 +1020,17 @@ function calcScore(slots, rankKey){
 /* ============== PANEL 1: 個別計算 UI ============== */
 const activeContainer = document.getElementById('active-slots');
 const slotLabels = ["1枠目（最上段）","2枠目（中段）","3枠目（最下段）"];
+const DEFAULT_ACTIVE_KEYS = ["赤首飾り","赤カカシ","青指輪"];
 
 function buildSlotRow(index){
   const row = document.createElement('div');
   row.className = 'slot-row' + (index===0 ? ' top' : '');
   row.innerHTML = `
     <div class="slot-badge">${index+1}</div>
-    <div class="field-mini">
-      <span class="ml">色</span>
-      <select class="active-color" data-idx="${index}">
-        ${COLORS.map(c=>`<option value="${c}">${c}</option>`).join('')}
-      </select>
-    </div>
-    <div class="field-mini">
-      <span class="ml">形</span>
-      <select class="active-shape" data-idx="${index}">
-        ${SHAPES.map(s=>`<option value="${s}">${s}</option>`).join('')}
+    <div class="field-mini recipe-field">
+      <span class="ml">鍛冶レシピ（色形）</span>
+      <select class="active-recipe" data-idx="${index}">
+        ${recipeOptionsHTML(DEFAULT_ACTIVE_KEYS[index])}
       </select>
     </div>
     <div class="slot-score">
@@ -933,15 +1048,15 @@ function buildSlotRow(index){
 }
 for(let i=0;i<3;i++){ activeContainer.appendChild(buildSlotRow(i)); }
 
-// デフォルト値をずらして見栄え良く
-document.querySelectorAll('.active-color').forEach((el,i)=>{ el.value = COLORS[i%4]; el.classList.add('color-'+el.value); });
-document.querySelectorAll('.active-shape').forEach((el,i)=>{ el.value = ["首輪","カカシ","指輪"][i]; });
+document.querySelectorAll('.active-recipe').forEach(el=>{ updateColorBorder(el); });
 
 function readActiveSlots(){
   const slots = [];
   for(let i=0;i<3;i++){
-    const color = document.querySelector(`.active-color[data-idx="${i}"]`).value;
-    const shape = document.querySelector(`.active-shape[data-idx="${i}"]`).value;
+    const sel = document.querySelector(`.active-recipe[data-idx="${i}"]`);
+    const opt = sel.selectedOptions[0];
+    const color = opt.dataset.color;
+    const shape = opt.dataset.shape;
     const completed = document.querySelector(`.active-completed[data-idx="${i}"]`).checked;
     slots.push({color, shape, completed});
   }
@@ -950,7 +1065,8 @@ function readActiveSlots(){
 
 function updateColorBorder(select){
   COLORS.forEach(c=>select.classList.remove('color-'+c));
-  select.classList.add('color-'+select.value);
+  const color = select.selectedOptions[0].dataset.color;
+  select.classList.add('color-'+color);
 }
 
 function renderCalc(){
@@ -995,11 +1111,8 @@ function renderCalc(){
   renderStockExchangeNote(slots);
 }
 
-document.querySelectorAll('.active-color').forEach(el=>{
+document.querySelectorAll('.active-recipe').forEach(el=>{
   el.addEventListener('change', ()=>{ updateColorBorder(el); renderCalc(); });
-});
-document.querySelectorAll('.active-shape').forEach(el=>{
-  el.addEventListener('change', renderCalc);
 });
 document.querySelectorAll('.active-completed').forEach(el=>{
   el.addEventListener('change', ()=>{
@@ -1013,6 +1126,7 @@ document.getElementById('rank-select').addEventListener('change', renderCalc);
 
 /* ============== ストックスロット参照表 ============== */
 const stockContainer = document.getElementById('stock-slots');
+const DEFAULT_STOCK_KEY = "赤指輪";
 for(let i=0;i<6;i++){
   const div = document.createElement('div');
   div.className = 'stock-slot';
@@ -1023,26 +1137,22 @@ for(let i=0;i<6;i++){
         <input type="checkbox" class="stock-empty" data-idx="${i}">空欄
       </label>
     </div>
-    <select class="stock-color" data-idx="${i}" style="margin-bottom:6px;">
-      ${COLORS.map(c=>`<option value="${c}">${c}</option>`).join('')}
-    </select>
-    <select class="stock-shape" data-idx="${i}">
-      ${SHAPES.map(s=>`<option value="${s}">${s}</option>`).join('')}
+    <select class="stock-recipe" data-idx="${i}">
+      ${recipeOptionsHTML(DEFAULT_STOCK_KEY)}
     </select>
   `;
   stockContainer.appendChild(div);
 }
-document.querySelectorAll('.stock-color, .stock-shape').forEach(el=>{
-  el.addEventListener('change', ()=> renderCalc());
+document.querySelectorAll('.stock-recipe').forEach(el=>{
+  updateColorBorder(el);
+  el.addEventListener('change', ()=>{ updateColorBorder(el); renderCalc(); });
 });
 document.querySelectorAll('.stock-empty').forEach(cb=>{
   cb.addEventListener('change', ()=>{
     const idx = cb.dataset.idx;
     const slotDiv = cb.closest('.stock-slot');
-    const colorSel = document.querySelector(`.stock-color[data-idx="${idx}"]`);
-    const shapeSel = document.querySelector(`.stock-shape[data-idx="${idx}"]`);
-    colorSel.disabled = cb.checked;
-    shapeSel.disabled = cb.checked;
+    const recipeSel = document.querySelector(`.stock-recipe[data-idx="${idx}"]`);
+    recipeSel.disabled = cb.checked;
     slotDiv.classList.toggle('empty', cb.checked);
     renderCalc();
   });
@@ -1057,8 +1167,10 @@ function readStockSlots(){
       slots.push(null);
       continue;
     }
-    const color = document.querySelector(`.stock-color[data-idx="${i}"]`).value;
-    const shape = document.querySelector(`.stock-shape[data-idx="${i}"]`).value;
+    const sel = document.querySelector(`.stock-recipe[data-idx="${i}"]`);
+    const opt = sel.selectedOptions[0];
+    const color = opt.dataset.color;
+    const shape = opt.dataset.shape;
     slots.push({color, shape});
   }
   return slots;
@@ -1106,6 +1218,87 @@ updateDiff();
 
 function recipeKey(r){ return r.color + '_' + r.shape; }
 
+// 現在の手持ち（アクティブ3枚＋ストック空欄以外）から、各アクティブ枠ごとの候補
+// （レシピ自体＝そのまま／同色or同形のストック交換）×（完成／未完成）を生成する
+function buildCandidatesPerSlot(activeSlots, stockSlots){
+  return activeSlots.map((a)=>{
+    const recipeOptions = [{ color:a.color, shape:a.shape, source: 'そのまま' }];
+    const seen = new Set();
+    stockSlots.forEach((s, si)=>{
+      if(s === null) return;
+      if(a.color === s.color || a.shape === s.shape){
+        const dupKey = recipeKey(s)+'_dup'+si;
+        if(!seen.has(dupKey)){
+          recipeOptions.push({ color:s.color, shape:s.shape, source: `ストック${si+1}と交換` });
+          seen.add(dupKey);
+        }
+      }
+    });
+    const cands = [];
+    recipeOptions.forEach(opt=>{
+      cands.push({ ...opt, completed: true, statusLabel: '完成' });
+      cands.push({ ...opt, completed: false, statusLabel: '未完成' });
+    });
+    return cands;
+  });
+}
+
+// 候補配列から全組み合わせ（{slots, r}の配列）を生成する
+function enumerateAllCombos(candidatesPerSlot, rank){
+  const all = [];
+  candidatesPerSlot[0].forEach(c0=>{
+    candidatesPerSlot[1].forEach(c1=>{
+      candidatesPerSlot[2].forEach(c2=>{
+        const slots = [c0, c1, c2];
+        const r = calcScore(slots, rank);
+        all.push({slots, r});
+      });
+    });
+  });
+  return all;
+}
+
+function comboDedupeKey(item){
+  return item.slots.map(s=>recipeKey(s)+':'+s.source+':'+s.completed).join('|');
+}
+
+function renderComboList(items, maxShow){
+  const uniqueMap = new Map();
+  items.forEach(item=>{
+    const key = comboDedupeKey(item);
+    if(!uniqueMap.has(key)) uniqueMap.set(key, item);
+  });
+  let unique = [...uniqueMap.values()];
+  unique.sort((a,b)=>{
+    const ia = a.slots.filter(s=>s.completed===false).length;
+    const ib = b.slots.filter(s=>s.completed===false).length;
+    return ia - ib;
+  });
+  const shown = unique.slice(0, maxShow);
+
+  let html = '<div class="combo-list">';
+  shown.forEach((item, idx)=>{
+    const pillsHtml = item.slots.map((s,i)=>{
+      const topClass = i===0 ? ' top' : '';
+      const label = i===0 ? '①×2' : (i===1?'②':'③');
+      const srcTag = s.source === 'そのまま' ? '' : `<span style="color:var(--ember); font-size:10px;">(${s.source})</span>`;
+      const statusTag = s.completed === false
+        ? `<span style="color:var(--warn); font-size:10px;">[未完成]</span>`
+        : '';
+      return `<span class="combo-pill${topClass}"><span class="dot dot-${s.color}"></span>${label} ${s.color}${s.shape}${srcTag}${statusTag}</span>`;
+    }).join('<span class="combo-arrow">→</span>');
+    html += `
+      <div class="combo-card">
+        <div class="combo-rank">${idx+1}</div>
+        <div class="combo-slots">${pillsHtml}</div>
+        <div class="combo-meta">合計<span class="combo-score">${item.r.total}</span></div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  return {html, uniqueCount: unique.length};
+}
+
 document.getElementById('target-search-btn').addEventListener('click', ()=>{
   const diff = updateDiff();
   const rank = document.getElementById('rank-select').value; // スコア計算タブと同じランクを使用
@@ -1123,87 +1316,71 @@ document.getElementById('target-search-btn').addEventListener('click', ()=>{
   const activeSlots = readActiveSlots();      // [{color,shape,completed} x3]　現在アクティブに入っているもの
   const stockSlots = readStockSlots();        // [{color,shape}|null x6]
 
-  // 各アクティブ枠ごとの候補（レシピ自体）：「そのまま」＋「同色or同形のストック」
-  // さらに各候補について「完成」「未完成」の両方をバリエーションとして用意する
-  const candidatesPerSlot = activeSlots.map((a)=>{
-    const recipeOptions = [{ color:a.color, shape:a.shape, source: 'そのまま' }];
-    const seen = new Set();
-    stockSlots.forEach((s, si)=>{
-      if(s === null) return;
-      if(a.color === s.color || a.shape === s.shape){
-        const dupKey = recipeKey(s)+'_dup'+si;
-        if(!seen.has(dupKey)){
-          recipeOptions.push({ color:s.color, shape:s.shape, source: `ストック${si+1}と交換` });
-          seen.add(dupKey);
-        }
-      }
-    });
-    // 完成/未完成のバリエーション展開
-    const cands = [];
-    recipeOptions.forEach(opt=>{
-      cands.push({ ...opt, completed: true, statusLabel: '完成' });
-      cands.push({ ...opt, completed: false, statusLabel: '未完成' });
-    });
-    return cands;
-  });
-
-  const found = [];
-  candidatesPerSlot[0].forEach(c0=>{
-    candidatesPerSlot[1].forEach(c1=>{
-      candidatesPerSlot[2].forEach(c2=>{
-        const slots = [c0, c1, c2];
-        const r = calcScore(slots, rank);
-        if(r.total === diff){
-          found.push({slots, r});
-        }
-      });
-    });
-  });
+  const candidatesPerSlot = buildCandidatesPerSlot(activeSlots, stockSlots);
+  const allCombos = enumerateAllCombos(candidatesPerSlot, rank);
+  const found = allCombos.filter(item => item.r.total === diff);
 
   if(found.length === 0){
     resultDiv.innerHTML = `<div class="target-status notfound">手持ちのアクティブ3枚・ストック（空欄を除く）の組み合わせでは、差分 ${diff} 点を作れる構成が見つかりませんでした。ストックの内容や鍛冶ランクをご確認ください。</div>`;
     return;
   }
 
-  // 重複（同じ構成：レシピ・出所・完成状態が同一）を除去
-  const uniqueMap = new Map();
-  found.forEach(item=>{
-    const key = item.slots.map(s=>recipeKey(s)+':'+s.source+':'+s.completed).join('|');
-    if(!uniqueMap.has(key)) uniqueMap.set(key, item);
-  });
-  let uniqueFound = [...uniqueMap.values()];
-
-  // 表示が多すぎる場合に備えて上限を設定（シンプルな構成を優先：未完成の枚数が少ない順）
-  uniqueFound.sort((a,b)=>{
-    const incompleteCountA = a.slots.filter(s=>s.completed===false).length;
-    const incompleteCountB = b.slots.filter(s=>s.completed===false).length;
-    return incompleteCountA - incompleteCountB;
-  });
   const MAX_SHOW = 150;
-  const shown = uniqueFound.slice(0, MAX_SHOW);
+  const {html: comboHtml, uniqueCount} = renderComboList(found, MAX_SHOW);
+  const statusHtml = `<div class="target-status found">差分 ${diff} 点を、手持ちレシピだけで作れる構成が ${uniqueCount} 通り見つかりました${uniqueCount>MAX_SHOW ? `（上位 ${MAX_SHOW} 件を表示）` : ''}。</div>`;
+  resultDiv.innerHTML = statusHtml + comboHtml;
+});
 
-  let html = `<div class="target-status found">差分 ${diff} 点を、手持ちレシピだけで作れる構成が ${uniqueFound.length} 通り見つかりました${uniqueFound.length>MAX_SHOW ? `（上位 ${MAX_SHOW} 件を表示）` : ''}。</div>`;
-  html += '<div class="combo-list">';
-  shown.forEach((item, idx)=>{
-    const pillsHtml = item.slots.map((s,i)=>{
-      const topClass = i===0 ? ' top' : '';
-      const label = i===0 ? '①×2' : (i===1?'②':'③');
-      const srcTag = s.source === 'そのまま' ? '' : `<span style="color:var(--ember); font-size:10px;">(${s.source})</span>`;
-      const statusTag = s.completed === false
-        ? `<span style="color:var(--warn); font-size:10px;">[未完成]</span>`
-        : '';
-      return `<span class="combo-pill${topClass}"><span class="dot dot-${s.color}"></span>${label} ${s.color}${s.shape}${srcTag}${statusTag}</span>`;
-    }).join('<span class="combo-arrow">→</span>');
+/* ============== PANEL 3: 達成可能スコア一覧 ============== */
+document.getElementById('achievable-search-btn').addEventListener('click', ()=>{
+  const rank = document.getElementById('rank-select').value;
+  const resultDiv = document.getElementById('achievable-result');
+
+  const activeSlots = readActiveSlots();
+  const stockSlots = readStockSlots();
+
+  const candidatesPerSlot = buildCandidatesPerSlot(activeSlots, stockSlots);
+  const allCombos = enumerateAllCombos(candidatesPerSlot, rank);
+
+  // スコアごとにグルーピング
+  const byScore = new Map();
+  allCombos.forEach(item=>{
+    const t = item.r.total;
+    if(!byScore.has(t)) byScore.set(t, []);
+    byScore.get(t).push(item);
+  });
+
+  const scoresDesc = [...byScore.keys()].sort((a,b)=>b-a);
+
+  let html = `<div class="target-status found">今の手持ちから到達できるスコアは ${scoresDesc.length} 種類見つかりました（降順）。スコアをクリックすると組み合わせが展開されます。</div>`;
+  html += '<div class="score-list" id="score-list">';
+  scoresDesc.forEach((score, idx)=>{
+    const combosForScore = byScore.get(score);
+    const {html: comboHtml, uniqueCount} = renderComboList(combosForScore, 150);
     html += `
-      <div class="combo-card">
-        <div class="combo-rank">${idx+1}</div>
-        <div class="combo-slots">${pillsHtml}</div>
-        <div class="combo-meta">差分達成<span class="combo-score">${item.r.total}</span></div>
+      <div class="score-item">
+        <button class="score-row-btn" data-score-idx="${idx}">
+          <span class="score-row-rank">${idx+1}</span>
+          <span class="score-row-value">${score} 点</span>
+          <span class="score-row-count">${uniqueCount} 通り</span>
+          <span class="score-row-caret">▾</span>
+        </button>
+        <div class="score-row-detail" id="score-detail-${idx}">${comboHtml}</div>
       </div>
     `;
   });
   html += '</div>';
   resultDiv.innerHTML = html;
+
+  document.querySelectorAll('.score-row-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const idx = btn.dataset.scoreIdx;
+      const detail = document.getElementById('score-detail-'+idx);
+      const isOpen = detail.classList.contains('open');
+      detail.classList.toggle('open', !isOpen);
+      btn.classList.toggle('open', !isOpen);
+    });
+  });
 });
 
 /* ============== タブ切り替え ============== */
