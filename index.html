@@ -825,6 +825,19 @@ footer{
     </div>
 
     <div class="card">
+      <h2 class="card-title">交換と連鎖のルール（差分逆算・達成可能スコア一覧で使用）</h2>
+      <div class="note-block">
+        <ul>
+          <li>アクティブ枠がストックの鍛冶アイテムと交換すると、<strong>手放した元のアイテムはストック側に入る</strong>ため、それ以降は他のアクティブ枠からも（色or形が一致すれば）交換先として選べるようになります（連鎖交換）。</li>
+          <li>そのため、<strong>本物のストックが1つ以上関与している場合に限り</strong>、結果的にアクティブの元アイテムが別の枠に移動すること（枠同士の入れ替わりに見える状態）もあり得ます。</li>
+          <li><strong>ストックが1枚も無い状態では、アクティブの元アイテムが他の枠に移動することはありません</strong>（交換には必ず本物のストックが関わる必要があります）。</li>
+          <li>各アクティブ枠が交換できるのは1回まで、という制約は変わりません。</li>
+          <li>同じストックの1枚を、複数のアクティブ枠が同時に使うことはできません（重複使用不可）。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
       <h2 class="card-title">鍛冶レシピ基礎スコア</h2>
       <div class="rule-grid">
         <table class="score-table">
@@ -1218,42 +1231,99 @@ updateDiff();
 
 function recipeKey(r){ return r.color + '_' + r.shape; }
 
-// 現在の手持ち（アクティブ3枚＋ストック空欄以外）から、各アクティブ枠ごとの候補
-// （レシピ自体＝そのまま／同色or同形のストック交換）×（完成／未完成）を生成する
-function buildCandidatesPerSlot(activeSlots, stockSlots){
-  return activeSlots.map((a)=>{
-    const recipeOptions = [{ color:a.color, shape:a.shape, source: 'そのまま' }];
-    const seen = new Set();
-    stockSlots.forEach((s, si)=>{
-      if(s === null) return;
-      if(a.color === s.color || a.shape === s.shape){
-        const dupKey = recipeKey(s)+'_dup'+si;
-        if(!seen.has(dupKey)){
-          recipeOptions.push({ color:s.color, shape:s.shape, source: `ストック${si+1}と交換` });
-          seen.add(dupKey);
-        }
-      }
-    });
-    const cands = [];
-    recipeOptions.forEach(opt=>{
-      cands.push({ ...opt, completed: true, statusLabel: '完成' });
-      cands.push({ ...opt, completed: false, statusLabel: '未完成' });
-    });
-    return cands;
+// 手持ち全体のプールを構築する：
+//   poolIdx 0,1,2 = アクティブ1,2,3枠目の「元のアイテム」
+//   poolIdx 3以降 = ストック（空欄以外）の各アイテム
+// 各アイテムは「誰か1つの枠にしか配置されない」という制約のもとで、
+// アクティブ3枠に重複なく配置する組み合わせ（順列）を全探索する。
+//
+// 配置ルール：
+//   - 枠Xにそのアイテム自身（poolIdx===X）を置くのは常にOK（元のまま）
+//   - 枠Xに他のアイテムを置く場合は、そのアイテムの色or形が「枠Xの元のアイテム」の色or形と一致している必要がある
+//     （ストックから来たか、別の枠から外れてきたアイテムかは区別しない）
+function buildPool(activeSlots, stockSlots){
+  const pool = [];
+  activeSlots.forEach((a, i)=>{
+    pool.push({ color:a.color, shape:a.shape, poolIdx:i, originSlot:i });
   });
+  stockSlots.forEach((s, si)=>{
+    if(s === null) return;
+    pool.push({ color:s.color, shape:s.shape, poolIdx: pool.length, originLabel: `ストック${si+1}` });
+  });
+  return pool;
 }
 
-// 候補配列から全組み合わせ（{slots, r}の配列）を生成する
-function enumerateAllCombos(candidatesPerSlot, rank){
-  const all = [];
-  candidatesPerSlot[0].forEach(c0=>{
-    candidatesPerSlot[1].forEach(c1=>{
-      candidatesPerSlot[2].forEach(c2=>{
-        const slots = [c0, c1, c2];
-        const r = calcScore(slots, rank);
-        all.push({slots, r});
-      });
+// 枠slotIdxにitemを「一時的に」置けるかどうか（同色/同形 or 自分自身）の基本判定
+function basicCanPlace(item, slotIdx, originalActiveSlots){
+  if(item.poolIdx === slotIdx) return true; // 元のアイテムそのまま
+  const orig = originalActiveSlots[slotIdx];
+  return item.color === orig.color || item.shape === orig.shape;
+}
+
+// 最終配置全体（assigned[0..2]）が次のルールを満たすかチェックする：
+//   ・アクティブの元アイテムがどこかの枠から別の枠へ移動している（=誰かが「そのまま」ではない）場合、
+//     その移動には必ず「本物のストック（poolIdx>=3）」が最低1つ関与していなければならない。
+//   ・ストックが1つも使われていない状態では、アクティブの元アイテムが移動すること（枠同士のスワップ含む）はできない。
+function isValidFinalAssignment(assigned){
+  const anyActiveItemMoved = assigned.some((item, slotIdx) => item.poolIdx < 3 && item.poolIdx !== slotIdx);
+  if(!anyActiveItemMoved) return true; // 全員そのまま、または該当なしならOK
+  const realStockUsed = assigned.some(item => item.poolIdx >= 3);
+  return realStockUsed;
+}
+
+// プールから重複なく3枠に配置する全パターン（{slots(色形のみ), placement(出所情報)}の配列）を生成する
+function enumerateValidPlacements(activeSlots, stockSlots){
+  const pool = buildPool(activeSlots, stockSlots);
+  const results = [];
+
+  function permute(usedIdxSet, assigned){
+    const slotIdx = assigned.length;
+    if(slotIdx === 3){
+      if(isValidFinalAssignment(assigned)){
+        results.push(assigned.slice());
+      }
+      return;
+    }
+    pool.forEach(item=>{
+      if(usedIdxSet.has(item.poolIdx)) return;
+      if(!basicCanPlace(item, slotIdx, activeSlots)) return;
+      usedIdxSet.add(item.poolIdx);
+      assigned.push(item);
+      permute(usedIdxSet, assigned);
+      assigned.pop();
+      usedIdxSet.delete(item.poolIdx);
     });
+  }
+  permute(new Set(), []);
+  return results;
+}
+
+function placementSourceLabel(item, slotIdx){
+  if(item.poolIdx === slotIdx) return 'そのまま';
+  if(item.originLabel) return `${item.originLabel}と交換`;
+  return `アクティブ${item.originSlot+1}枠目と交換`;
+}
+
+// 現在の手持ち（アクティブ3枚＋ストック空欄以外）から、プール制約を満たす全配置パターンに
+// 完成／未完成のバリエーションを掛け合わせて全組み合わせ（{slots, r}の配列）を生成する
+function enumerateAllCombos(activeSlots, stockSlots, rank){
+  const placements = enumerateValidPlacements(activeSlots, stockSlots);
+  const all = [];
+  placements.forEach(placement=>{
+    const baseSlots = placement.map((item, slotIdx)=>({
+      color: item.color,
+      shape: item.shape,
+      source: placementSourceLabel(item, slotIdx)
+    }));
+    // 各枠ごとに完成/未完成の2パターン、3枠で2^3=8通り
+    for(let mask=0; mask<8; mask++){
+      const slots = baseSlots.map((s,i)=>({
+        ...s,
+        completed: (mask & (1<<i)) === 0
+      }));
+      const r = calcScore(slots, rank);
+      all.push({slots, r});
+    }
   });
   return all;
 }
@@ -1316,8 +1386,7 @@ document.getElementById('target-search-btn').addEventListener('click', ()=>{
   const activeSlots = readActiveSlots();      // [{color,shape,completed} x3]　現在アクティブに入っているもの
   const stockSlots = readStockSlots();        // [{color,shape}|null x6]
 
-  const candidatesPerSlot = buildCandidatesPerSlot(activeSlots, stockSlots);
-  const allCombos = enumerateAllCombos(candidatesPerSlot, rank);
+  const allCombos = enumerateAllCombos(activeSlots, stockSlots, rank);
   const found = allCombos.filter(item => item.r.total === diff);
 
   if(found.length === 0){
@@ -1339,8 +1408,7 @@ document.getElementById('achievable-search-btn').addEventListener('click', ()=>{
   const activeSlots = readActiveSlots();
   const stockSlots = readStockSlots();
 
-  const candidatesPerSlot = buildCandidatesPerSlot(activeSlots, stockSlots);
-  const allCombos = enumerateAllCombos(candidatesPerSlot, rank);
+  const allCombos = enumerateAllCombos(activeSlots, stockSlots, rank);
 
   // スコアごとにグルーピング
   const byScore = new Map();
