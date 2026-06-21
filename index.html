@@ -224,6 +224,16 @@ select#rank-select{width:200px;}
   margin:0;
   flex-shrink:0;
 }
+.complete-toggle input[type="checkbox"]:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
+.lock-note{
+  font-family:var(--mono);
+  font-size:10.5px;
+  color:var(--steel-600);
+  margin-left:21px;
+}
 .slot-row.incomplete{
   background:rgba(200,70,58,.06);
   border-radius:var(--radius);
@@ -385,8 +395,10 @@ select.color-金{border-left:3px solid var(--c-gold);}
 /* ---------- stock table ---------- */
 .stock-grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill, minmax(140px,1fr));
+  grid-template-columns:1fr 1fr;
+  grid-template-rows:repeat(3, auto);
   gap:10px;
+  max-width:520px;
 }
 .stock-slot{
   background:var(--steel-900);
@@ -496,6 +508,19 @@ button.primary{
 }
 button.primary:hover{filter:brightness(1.08);}
 button.primary:active{transform:translateY(1px);}
+
+.solver-btn-row{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.solver-btn-row button.primary{
+  flex:1 1 220px;
+}
+button.primary.secondary{
+  background:linear-gradient(135deg, var(--steel-600) 0%, var(--steel-700) 100%);
+  border:1px solid var(--steel-600);
+}
 
 .target-result{
   margin-top:8px;
@@ -693,6 +718,9 @@ footer{
   .result-banner{flex-direction:column; align-items:flex-start;}
   .target-row{flex-direction:column; align-items:stretch;}
 }
+@media (max-width:380px){
+  .stock-grid{grid-template-columns:1fr;}
+}
 </style>
 </head>
 <body>
@@ -708,9 +736,7 @@ footer{
 
   <nav class="tabs">
     <button class="tab-btn active" data-tab="calc"><span class="num">01</span>スコア計算</button>
-    <button class="tab-btn" data-tab="target"><span class="num">02</span>差分スコア逆算</button>
-    <button class="tab-btn" data-tab="achievable"><span class="num">03</span>達成可能スコア一覧</button>
-    <button class="tab-btn" data-tab="rules"><span class="num">04</span>ルール・定義一覧</button>
+    <button class="tab-btn" data-tab="rules"><span class="num">02</span>ルール・定義一覧</button>
   </nav>
 
   <!-- ============ PANEL 1: 計算 ============ -->
@@ -728,6 +754,25 @@ footer{
             <option value="2">2級（ボーナス +3）</option>
             <option value="1">1級（ボーナス +4）</option>
           </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">目標までの差分 <span class="tag">DIFF</span></h2>
+      <p class="card-desc">現在の鍛冶スコアと目標到達スコアを入力すると、その差分（今回の鍛冶で稼ぐべきスコア）を自動で計算します。差分の探索は、このページ下部の「手持ちで探す」で行います。</p>
+      <div class="target-row">
+        <div class="field-block">
+          <label class="field-label">現在の鍛冶スコア</label>
+          <input type="number" id="current-score" value="0" class="num-input">
+        </div>
+        <div class="field-block">
+          <label class="field-label">目標到達スコア</label>
+          <input type="number" id="goal-score" value="20" class="num-input">
+        </div>
+        <div class="field-block diff-block">
+          <span class="field-label">差分（今回の鍛冶で稼ぐスコア）</span>
+          <span class="diff-value" id="diff-value">20</span>
         </div>
       </div>
     </div>
@@ -767,49 +812,20 @@ footer{
       <div class="exchange-note" id="exchange-note"></div>
     </div>
 
-  </section>
-
-  <!-- ============ PANEL 2: 逆算 ============ -->
-  <section class="panel" id="panel-target">
-
     <div class="card">
-      <h2 class="card-title">差分スコアを手持ちレシピで作れるか探す <span class="tag">SOLVER</span></h2>
-      <p class="card-desc">現在の鍛冶スコアと目標到達スコアを入力すると、その<strong>差分</strong>を、今<strong>「スコア計算」タブで入力した手持ちレシピ（アクティブ3枚＋ストックの空欄でない枚）</strong>だけを使って実現できるか探します。各アクティブ枠は「そのまま」か「同色・同形のストック1枚に交換」のいずれかです。</p>
-
-      <div class="target-row">
-        <div class="field-block">
-          <label class="field-label">現在の鍛冶スコア</label>
-          <input type="number" id="current-score" value="0" class="num-input">
-        </div>
-        <div class="field-block">
-          <label class="field-label">目標到達スコア</label>
-          <input type="number" id="goal-score" value="20" class="num-input">
-        </div>
-        <div class="field-block diff-block">
-          <span class="field-label">差分（今回の鍛冶で稼ぐスコア）</span>
-          <span class="diff-value" id="diff-value">20</span>
-        </div>
-        <button class="primary" id="target-search-btn">手持ちで探す</button>
+      <h2 class="card-title">手持ちレシピでスコアを探す <span class="tag">SOLVER</span></h2>
+      <p class="card-desc">このページのアクティブ3枚＋ストック（空欄でない枚）から、<strong>交換ルール</strong>（連鎖交換含む）と<strong>完成／未完成の選択</strong>を組み合わせて何が実現できるか探します。各アクティブ枠は「そのまま」か「同色・同形のストック1枚に交換」のいずれかです。</p>
+      <div class="solver-btn-row">
+        <button class="primary" id="target-search-btn">上の差分スコアを手持ちで探す</button>
+        <button class="primary secondary" id="achievable-search-btn">今の手持ちで到達できるスコア一覧を見る</button>
       </div>
-
-      <div class="target-result" id="target-result"></div>
-    </div>
-
-  </section>
-
-  <!-- ============ PANEL 3: 達成可能スコア一覧 ============ -->
-  <section class="panel" id="panel-achievable">
-
-    <div class="card">
-      <h2 class="card-title">今の手持ちで到達できるスコア一覧 <span class="tag">ALL SCORES</span></h2>
-      <p class="card-desc">「スコア計算」タブに入力されているアクティブ3枚とストック（空欄を除く）から、<strong>交換ルール</strong>と<strong>完成／未完成の選択</strong>を組み合わせて到達できる合計スコアを、降順の一覧で表示します。スコアをクリックすると、その点数を実現する組み合わせがすべて展開されます。</p>
-      <button class="primary" id="achievable-search-btn">手持ちから一覧を作る</button>
+      <div class="target-result" id="target-result" style="margin-top:20px;"></div>
       <div class="target-result" id="achievable-result" style="margin-top:20px;"></div>
     </div>
 
   </section>
 
-  <!-- ============ PANEL 4: ルール ============ -->
+  <!-- ============ PANEL 3: ルール ============ -->
   <section class="panel" id="panel-rules">
 
     <div class="card">
@@ -901,7 +917,8 @@ footer{
           <li>未完成にした枠の<strong>最終加算スコアは0</strong>になります。</li>
           <li>未完成にしても、その枠に置かれているレシピの<strong>色・形・参照用のスコアはそのまま存在する</strong>ため、<strong>カカシの隣接参照には影響しません</strong>（1枠目が未完成でも、他の枠から参照されるときは2倍後の値が使われます）。</li>
           <li>未完成の枠は<strong>同色・同形ボーナスの判定対象から外れます</strong>（完成している枠だけでカウントします）。</li>
-          <li>3枠のうち何枚を未完成にするかは自由（1枚〜3枚まで選べます）。</li>
+          <li>3枠のうち何枚を未完成にするかは自由（0枚〜3枚まで選べます）。</li>
+          <li><strong>例外：黄カカシ・黄指輪は未完成にできません</strong>（常に完成させてスコア化されます）。</li>
         </ul>
       </div>
     </div>
@@ -913,11 +930,23 @@ footer{
           <li>各枠のレシピの基礎スコアを、基本は「1枠目→2枠目→3枠目」の順で確定する（金固定10点／通常レシピは表の固定値／カカシは隣接参照）</li>
           <li>1枠目と2枠目が両方カカシの場合のみ、確定の順を「3枠目→2枠目→1枠目」に切り替える</li>
           <li>1枠目が確定したら、その値を必ず2倍する（通常レシピでもカカシでも）。これは完成・未完成に関わらず参照用の値としても使われる</li>
-          <li>未完成の枠は最終加算スコアを0とする（完成している枠だけが加算される）</li>
+          <li>未完成の枠は最終加算スコアを0とする（完成している枠だけが加算される。ただし黄カカシ・黄指輪は未完成にできない）</li>
           <li>1〜3枠目の最終加算スコアの合計を出す（基礎合計）</li>
           <li>完成している枠だけで色ボーナス・形ボーナスを判定し、ランクに応じた値を加算する</li>
           <li>基礎合計＋色ボーナス＋形ボーナス＝獲得鍛冶スコア</li>
         </ol>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">更新履歴</h2>
+      <div class="note-block" id="changelog-block">
+        <ul style="list-style:none; margin:0; padding:0;">
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-21</strong>　差分スコア入力欄をスコア計算タブ内（ランクとアクティブスロットの間）に統合。「手持ちで探す」機能をストックスロットの下に統合し、差分スコア逆算タブを廃止（3タブ構成に変更）。黄カカシ・黄指輪は未完成にできない制約を追加。ルール一覧タブに更新履歴を追加。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-21</strong>　交換の連鎖判定ロジックを修正。アクティブ同士が本物のストックを介さずに直接交換し合うケース（他の枠が別途ストックと交換していても、それとは無関係に発生する不正な組み合わせ）を正しく除外するようにした。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-21</strong>　現在の鍛冶スコア入力時に、目標到達スコアへ最も近い三桁ゾロ目を自動セットする機能を追加。ストックスロットのUIを2列×3行のボックス形式に変更。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-21</strong>　「達成可能スコア一覧」をタブ1の「手持ちで探す」ボタンの隣にボタンとして統合し、専用タブを廃止（2タブ構成に変更）。</li>
+        </ul>
       </div>
     </div>
 
@@ -948,6 +977,11 @@ function recipeOptionsHTML(selectedKey){
     const sel = r.key === selectedKey ? ' selected' : '';
     return `<option value="${r.key}" data-color="${r.color}" data-shape="${r.shape}"${sel}>${r.color}${r.shape}</option>`;
   }).join('');
+}
+
+// 黄カカシ・黄指輪は「あえて完成させない」選択ができない（常に完成扱い）
+function mustBeCompleted(s){
+  return s.color === "黄" && (s.shape === "カカシ" || s.shape === "指輪");
 }
 
 function baseScoreOf(color, shape){
@@ -1055,13 +1089,30 @@ function buildSlotRow(index){
         <input type="checkbox" class="active-completed" data-idx="${index}" checked>
         この鍛冶アイテムを完成させてスコア化する
       </label>
+      <span class="lock-note" style="display:none;">（黄カカシ・黄指輪は未完成にできません）</span>
     </div>
   `;
   return row;
 }
 for(let i=0;i<3;i++){ activeContainer.appendChild(buildSlotRow(i)); }
 
-document.querySelectorAll('.active-recipe').forEach(el=>{ updateColorBorder(el); });
+document.querySelectorAll('.active-recipe').forEach(el=>{ updateColorBorder(el); applyCompletedLock(el); });
+
+// 黄カカシ・黄指輪が選択されている枠は「完成させる」チェックを強制ON・操作不可にする
+function applyCompletedLock(recipeSelect){
+  const idx = recipeSelect.dataset.idx;
+  const opt = recipeSelect.selectedOptions[0];
+  const checkbox = document.querySelector(`.active-completed[data-idx="${idx}"]`);
+  const row = recipeSelect.closest('.slot-row');
+  const locked = mustBeCompleted({color: opt.dataset.color, shape: opt.dataset.shape});
+  checkbox.disabled = locked;
+  if(locked){
+    checkbox.checked = true;
+    row.classList.remove('incomplete');
+  }
+  const lockNote = row.querySelector('.lock-note');
+  if(lockNote) lockNote.style.display = locked ? 'inline' : 'none';
+}
 
 function readActiveSlots(){
   const slots = [];
@@ -1125,7 +1176,7 @@ function renderCalc(){
 }
 
 document.querySelectorAll('.active-recipe').forEach(el=>{
-  el.addEventListener('change', ()=>{ updateColorBorder(el); renderCalc(); });
+  el.addEventListener('change', ()=>{ updateColorBorder(el); applyCompletedLock(el); renderCalc(); });
 });
 document.querySelectorAll('.active-completed').forEach(el=>{
   el.addEventListener('change', ()=>{
@@ -1217,6 +1268,15 @@ const currentScoreInput = document.getElementById('current-score');
 const goalScoreInput = document.getElementById('goal-score');
 const diffValueEl = document.getElementById('diff-value');
 
+// 現在値以上で最も近い三桁ゾロ目（111,222,...,999）を返す。999超なら999のまま（上限）。
+function nearestTripleAbove(value){
+  const triples = [111,222,333,444,555,666,777,888,999];
+  for(const t of triples){
+    if(t >= value) return t;
+  }
+  return 999;
+}
+
 function updateDiff(){
   const cur = parseInt(currentScoreInput.value, 10) || 0;
   const goal = parseInt(goalScoreInput.value, 10) || 0;
@@ -1225,7 +1285,11 @@ function updateDiff(){
   diffValueEl.classList.toggle('negative', diff < 0);
   return diff;
 }
-currentScoreInput.addEventListener('input', updateDiff);
+currentScoreInput.addEventListener('input', ()=>{
+  const cur = parseInt(currentScoreInput.value, 10) || 0;
+  goalScoreInput.value = nearestTripleAbove(cur);
+  updateDiff();
+});
 goalScoreInput.addEventListener('input', updateDiff);
 updateDiff();
 
@@ -1261,14 +1325,45 @@ function basicCanPlace(item, slotIdx, originalActiveSlots){
 }
 
 // 最終配置全体（assigned[0..2]）が次のルールを満たすかチェックする：
-//   ・アクティブの元アイテムがどこかの枠から別の枠へ移動している（=誰かが「そのまま」ではない）場合、
-//     その移動には必ず「本物のストック（poolIdx>=3）」が最低1つ関与していなければならない。
-//   ・ストックが1つも使われていない状態では、アクティブの元アイテムが移動すること（枠同士のスワップ含む）はできない。
+//   枠Xが「枠Y（別のアクティブ枠, Y!==X）の元アイテム」を持っている場合、それは「枠Xは枠Yから受け継いだ」という
+//   移動の鎖（チェーン）の一部である。このチェーンを辿っていった先に「本物のストック（poolIdx>=3）」が
+//   見つかれば、その移動は有効（連鎖交換として成立する）。
+//   一方、チェーンを辿った結果、本物のストックに辿り着かずに同じ枠へ戻ってしまう場合（サイクル）は、
+//   本物のストックを経由しないアクティブ同士の直接交換であり、不正とする。
+//
+// 例：枠0が枠2の元アイテムを持ち、枠2が枠0の元アイテムを持つ（互いに直接交換しているだけ）→ サイクル → 不正
+// 例：枠0が本物のストックの何かを持ち、枠2が枠0の元アイテムを持つ → 鎖の先がストック → 有効
 function isValidFinalAssignment(assigned){
-  const anyActiveItemMoved = assigned.some((item, slotIdx) => item.poolIdx < 3 && item.poolIdx !== slotIdx);
-  if(!anyActiveItemMoved) return true; // 全員そのまま、または該当なしならOK
-  const realStockUsed = assigned.some(item => item.poolIdx >= 3);
-  return realStockUsed;
+  for(let startSlot=0; startSlot<3; startSlot++){
+    const startItem = assigned[startSlot];
+    if(startItem.poolIdx === startSlot) continue; // そのまま：チェーンなし、問題なし
+    if(startItem.poolIdx >= 3) continue; // 本物のストックから直接受け取っている：問題なし
+
+    // startItem.poolIdx は別のアクティブ枠（Y）の元アイテム。Yを辿っていく。
+    const visited = new Set([startSlot]);
+    let currentSlot = startItem.poolIdx; // 辿る先＝そのアイテムの元々の持ち主の枠番号
+    let reachedStock = false;
+    let safety = 0;
+    while(safety++ < 10){
+      if(visited.has(currentSlot)){
+        // 同じ枠に戻ってきた＝サイクル＝本物のストックに辿り着けなかった
+        break;
+      }
+      visited.add(currentSlot);
+      const nextItem = assigned[currentSlot];
+      if(nextItem.poolIdx === currentSlot){
+        // この枠は自分の元アイテムをそのまま持っている＝鎖はここで終端（ストックに辿り着けず終わる）
+        break;
+      }
+      if(nextItem.poolIdx >= 3){
+        reachedStock = true;
+        break;
+      }
+      currentSlot = nextItem.poolIdx;
+    }
+    if(!reachedStock) return false;
+  }
+  return true;
 }
 
 // プールから重複なく3枠に配置する全パターン（{slots(色形のみ), placement(出所情報)}の配列）を生成する
@@ -1305,22 +1400,28 @@ function placementSourceLabel(item, slotIdx){
 }
 
 // 現在の手持ち（アクティブ3枚＋ストック空欄以外）から、プール制約を満たす全配置パターンに
-// 完成／未完成のバリエーションを掛け合わせて全組み合わせ（{slots, r}の配列）を生成する
+// 完成／未完成のバリエーションを掛け合わせて全組み合わせ（{slots, r}の配列）を生成する。
+// 黄カカシ・黄指輪が配置された枠は、未完成バリエーションを生成しない（常に完成のみ）。
 function enumerateAllCombos(activeSlots, stockSlots, rank){
   const placements = enumerateValidPlacements(activeSlots, stockSlots);
   const all = [];
+  const seen = new Set();
   placements.forEach(placement=>{
     const baseSlots = placement.map((item, slotIdx)=>({
       color: item.color,
       shape: item.shape,
       source: placementSourceLabel(item, slotIdx)
     }));
-    // 各枠ごとに完成/未完成の2パターン、3枠で2^3=8通り
+    // 各枠ごとに完成/未完成の2パターン、3枠で2^3=8通り（未完成不可の枠は強制的に完成固定）
     for(let mask=0; mask<8; mask++){
       const slots = baseSlots.map((s,i)=>({
         ...s,
-        completed: (mask & (1<<i)) === 0
+        completed: mustBeCompleted(s) ? true : (mask & (1<<i)) === 0
       }));
+      // 未完成不可の枠がある場合、mask違いでも同一の組み合わせが重複生成されるため重複排除する
+      const dedupeKey = slots.map(s=>s.color+s.shape+':'+s.source+':'+s.completed).join('|');
+      if(seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
       const r = calcScore(slots, rank);
       all.push({slots, r});
     }
