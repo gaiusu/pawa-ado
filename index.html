@@ -328,6 +328,136 @@ select.color-黄{border-left:3px solid var(--c-yellow);}
 select.color-緑{border-left:3px solid var(--c-green);}
 select.color-金{border-left:3px solid var(--c-gold);}
 
+/* ---------- custom recipe dropdown ---------- */
+.visually-hidden{
+  position:absolute;
+  width:1px; height:1px;
+  opacity:0;
+  pointer-events:none;
+}
+.custom-select{
+  position:relative;
+  width:100%;
+}
+.custom-select.disabled{
+  opacity:.45;
+  pointer-events:none;
+}
+.custom-select-trigger{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  width:100%;
+  background:var(--steel-900);
+  border:1px solid var(--steel-600);
+  color:var(--steel-100);
+  font-family:var(--sans);
+  font-size:14px;
+  font-weight:600;
+  padding:10px 12px;
+  border-radius:var(--radius);
+  cursor:pointer;
+  transition:border-color .15s;
+  text-align:left;
+}
+.recipe-field .custom-select-trigger{font-size:15px;}
+.custom-select-trigger:hover{border-color:var(--ember);}
+.custom-select.open .custom-select-trigger{border-color:var(--ember); box-shadow:0 0 0 3px rgba(217,118,59,.18);}
+.custom-select-label{flex:1;}
+.custom-select-caret{
+  font-size:11px;
+  color:var(--steel-300);
+  transition:transform .15s;
+}
+.custom-select.open .custom-select-caret{transform:rotate(180deg); color:var(--ember);}
+
+.custom-select-list{
+  display:none;
+  position:absolute;
+  top:calc(100% + 4px);
+  left:0; right:0;
+  z-index:40;
+  margin:0; padding:4px;
+  list-style:none;
+  background:var(--steel-800);
+  border:1px solid var(--steel-600);
+  border-radius:var(--radius);
+  box-shadow:0 12px 28px rgba(0,0,0,.45);
+  max-height:280px;
+  overflow-y:auto;
+}
+.custom-select.open .custom-select-list{display:block;}
+.custom-select-list::-webkit-scrollbar{width:6px;}
+.custom-select-list::-webkit-scrollbar-thumb{background:var(--steel-600); border-radius:3px;}
+
+.custom-option{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:8px 10px;
+  border-radius:3px;
+  font-size:13.5px;
+  font-weight:600;
+  color:var(--steel-100);
+  cursor:pointer;
+}
+.custom-option:hover{background:var(--steel-700);}
+.custom-option.selected{background:rgba(217,118,59,.16); color:var(--ember);}
+.custom-option-label{flex:1;}
+
+/* 色見本：赤青黄緑はドット、金はリング状の枠で区別 */
+.color-swatch{
+  display:inline-block;
+  width:13px; height:13px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+.swatch-赤{background:var(--c-red);}
+.swatch-青{background:var(--c-blue);}
+.swatch-黄{background:var(--c-yellow);}
+.swatch-緑{background:var(--c-green);}
+.swatch-gold-ring{
+  background:transparent;
+  border:2.5px solid var(--c-gold);
+  box-shadow:0 0 0 1.5px var(--steel-900) inset;
+}
+
+/* ---------- collapsible (+ボタンで開く折りたたみ) ---------- */
+.collapsible-toggle{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  background:none;
+  border:none;
+  padding:0;
+  margin:0;
+  cursor:pointer;
+  font-family:var(--sans);
+  text-align:left;
+}
+.collapsible-icon{
+  width:22px; height:22px;
+  flex-shrink:0;
+  border-radius:50%;
+  border:1px solid var(--steel-600);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:var(--mono);
+  font-size:14px;
+  font-weight:700;
+  color:var(--steel-300);
+  transition:transform .2s, border-color .15s, color .15s;
+}
+.collapsible-toggle:hover .collapsible-icon{border-color:var(--ember); color:var(--ember);}
+.collapsible-toggle.open .collapsible-icon{transform:rotate(45deg); border-color:var(--ember); color:var(--ember);}
+.collapsible-body{
+  display:none;
+  margin-top:18px;
+}
+.collapsible-body.open{display:block;}
+
 /* ---------- result banner ---------- */
 .result-banner{
   display:flex;
@@ -764,15 +894,15 @@ footer{
       <div class="target-row">
         <div class="field-block">
           <label class="field-label">現在の鍛冶スコア</label>
-          <input type="number" id="current-score" value="0" class="num-input">
+          <input type="number" id="current-score" value="" placeholder="0" class="num-input">
         </div>
         <div class="field-block">
           <label class="field-label">目標到達スコア</label>
-          <input type="number" id="goal-score" value="20" class="num-input">
+          <input type="number" id="goal-score" value="" placeholder="0" class="num-input">
         </div>
         <div class="field-block diff-block">
           <span class="field-label">差分（今回の鍛冶で稼ぐスコア）</span>
-          <span class="diff-value" id="diff-value">20</span>
+          <span class="diff-value" id="diff-value">0</span>
         </div>
       </div>
     </div>
@@ -797,19 +927,30 @@ footer{
     </div>
 
     <div class="card" id="detail-card">
-      <h2 class="card-title">内訳 <span class="tag">DETAIL</span></h2>
-      <table class="score-table" id="detail-table">
-        <thead><tr><th>枠</th><th>レシピ</th><th>参照スコア</th><th>枠倍率後</th></tr></thead>
-        <tbody></tbody>
-      </table>
-      <div class="chip-row" id="bonus-chips"></div>
+      <button type="button" class="collapsible-toggle" data-target="detail-collapse-body">
+        <span class="card-title" style="margin:0;">内訳 <span class="tag">DETAIL</span></span>
+        <span class="collapsible-icon">+</span>
+      </button>
+      <div class="collapsible-body" id="detail-collapse-body">
+        <table class="score-table" id="detail-table">
+          <thead><tr><th>枠</th><th>レシピ</th><th>参照スコア</th><th>枠倍率後</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="chip-row" id="bonus-chips"></div>
+      </div>
     </div>
 
     <div class="card">
       <h2 class="card-title">ストックスロット <span class="tag">STOCK × 6</span></h2>
       <p class="card-desc">アクティブスロットと<strong>同じ色、または同じ形</strong>のストックは交換可能です（各アクティブ枠1回まで）。スコア計算には影響しません — 交換候補の確認用です。</p>
       <div class="stock-grid" id="stock-slots"></div>
-      <div class="exchange-note" id="exchange-note"></div>
+      <button type="button" class="collapsible-toggle" data-target="exchange-collapse-body" style="margin-top:14px;">
+        <span style="flex:1; text-align:left; font-size:13px; color:var(--steel-300); font-family:var(--mono);">交換可能な候補を見る</span>
+        <span class="collapsible-icon">+</span>
+      </button>
+      <div class="collapsible-body" id="exchange-collapse-body">
+        <div class="exchange-note" id="exchange-note"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -946,6 +1087,8 @@ footer{
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-21</strong>　交換の連鎖判定ロジックを修正。アクティブ同士が本物のストックを介さずに直接交換し合うケース（他の枠が別途ストックと交換していても、それとは無関係に発生する不正な組み合わせ）を正しく除外するようにした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-21</strong>　現在の鍛冶スコア入力時に、目標到達スコアへ最も近い三桁ゾロ目を自動セットする機能を追加。ストックスロットのUIを2列×3行のボックス形式に変更。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-21</strong>　「達成可能スコア一覧」をタブ1の「手持ちで探す」ボタンの隣にボタンとして統合し、専用タブを廃止（2タブ構成に変更）。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-21</strong>　鍛冶レシピのドロップダウンをカスタムUIに変更し、選択肢に色見本（赤・青・黄・緑はドット、金は枠）を表示。内訳・交換可能な候補は、デフォルトで折りたたまれた状態にし、＋ボタンで開く形式に変更。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-22</strong>　現在の鍛冶スコア・目標到達スコアの入力欄を、初期値0から空欄に変更。毎回0を消してから入力する手間をなくした。</li>
         </ul>
       </div>
     </div>
@@ -977,6 +1120,89 @@ function recipeOptionsHTML(selectedKey){
     const sel = r.key === selectedKey ? ' selected' : '';
     return `<option value="${r.key}" data-color="${r.color}" data-shape="${r.shape}"${sel}>${r.color}${r.shape}</option>`;
   }).join('');
+}
+
+// 色見本（ドット or 金は枠）のHTMLを返す
+function colorSwatchHTML(color){
+  if(color === "金"){
+    return `<span class="color-swatch swatch-gold-ring"></span>`;
+  }
+  return `<span class="color-swatch swatch-${color}"></span>`;
+}
+
+// カスタムドロップダウンのHTML文字列を生成する。
+// 本物の<select>は隠して値の保持・既存ロジックとの連携に使い、見た目はこのカスタムUIで表示する。
+// selectClass: 隠しselectに付与するクラス名（例: "active-recipe"）
+// dataIdx: data-idx属性の値
+// selectedKey: 初期選択キー（例: "赤指輪"）
+function customRecipeDropdownHTML(selectClass, dataIdx, selectedKey){
+  const selectedRecipe = ALL_RECIPES.find(r=>r.key===selectedKey) || ALL_RECIPES[0];
+  const optionsListHTML = ALL_RECIPES.map(r=>{
+    const isSelected = r.key === selectedKey ? ' selected' : '';
+    return `
+      <li class="custom-option${isSelected}" data-key="${r.key}" data-color="${r.color}" data-shape="${r.shape}" role="option">
+        ${colorSwatchHTML(r.color)}<span class="custom-option-label">${r.color}${r.shape}</span>
+      </li>`;
+  }).join('');
+  return `
+    <div class="custom-select" data-for="${selectClass}" data-idx="${dataIdx}">
+      <select class="${selectClass} visually-hidden" data-idx="${dataIdx}">
+        ${recipeOptionsHTML(selectedKey)}
+      </select>
+      <button type="button" class="custom-select-trigger" data-idx="${dataIdx}">
+        ${colorSwatchHTML(selectedRecipe.color)}<span class="custom-select-label">${selectedRecipe.color}${selectedRecipe.shape}</span>
+        <span class="custom-select-caret">▾</span>
+      </button>
+      <ul class="custom-select-list" role="listbox">
+        ${optionsListHTML}
+      </ul>
+    </div>`;
+}
+
+// カスタムドロップダウンの開閉・選択操作を有効化する（一度だけ呼び出せばイベント委任で全体に効く）
+function initCustomDropdowns(){
+  document.addEventListener('click', (e)=>{
+    const trigger = e.target.closest('.custom-select-trigger');
+    const openLists = document.querySelectorAll('.custom-select.open');
+
+    if(trigger){
+      const wrap = trigger.closest('.custom-select');
+      const willOpen = !wrap.classList.contains('open');
+      openLists.forEach(w=>w.classList.remove('open'));
+      if(willOpen) wrap.classList.add('open');
+      return;
+    }
+
+    const optionEl = e.target.closest('.custom-option');
+    if(optionEl){
+      const wrap = optionEl.closest('.custom-select');
+      const hiddenSelect = wrap.querySelector('select');
+      const key = optionEl.dataset.key;
+      hiddenSelect.value = key;
+      hiddenSelect.dispatchEvent(new Event('change', {bubbles:true}));
+      wrap.classList.remove('open');
+      return;
+    }
+
+    // 外側クリックで閉じる
+    if(!e.target.closest('.custom-select')){
+      openLists.forEach(w=>w.classList.remove('open'));
+    }
+  });
+}
+
+// 隠しselectの現在値に合わせて、カスタムUI（トリガー表示・選択中マーク）を再同期する
+function syncCustomDropdownDisplay(hiddenSelect){
+  const wrap = hiddenSelect.closest('.custom-select');
+  if(!wrap) return;
+  const opt = hiddenSelect.selectedOptions[0];
+  const color = opt.dataset.color;
+  const shape = opt.dataset.shape;
+  const trigger = wrap.querySelector('.custom-select-trigger');
+  trigger.innerHTML = `${colorSwatchHTML(color)}<span class="custom-select-label">${color}${shape}</span><span class="custom-select-caret">▾</span>`;
+  wrap.querySelectorAll('.custom-option').forEach(li=>{
+    li.classList.toggle('selected', li.dataset.key === hiddenSelect.value);
+  });
 }
 
 // 黄カカシ・黄指輪は「あえて完成させない」選択ができない（常に完成扱い）
@@ -1076,9 +1302,7 @@ function buildSlotRow(index){
     <div class="slot-badge">${index+1}</div>
     <div class="field-mini recipe-field">
       <span class="ml">鍛冶レシピ（色形）</span>
-      <select class="active-recipe" data-idx="${index}">
-        ${recipeOptionsHTML(DEFAULT_ACTIVE_KEYS[index])}
-      </select>
+      ${customRecipeDropdownHTML('active-recipe', index, DEFAULT_ACTIVE_KEYS[index])}
     </div>
     <div class="slot-score">
       <span class="ml">${slotLabels[index]}</span>
@@ -1096,7 +1320,7 @@ function buildSlotRow(index){
 }
 for(let i=0;i<3;i++){ activeContainer.appendChild(buildSlotRow(i)); }
 
-document.querySelectorAll('.active-recipe').forEach(el=>{ updateColorBorder(el); applyCompletedLock(el); });
+document.querySelectorAll('.active-recipe').forEach(el=>{ updateColorBorder(el); applyCompletedLock(el); syncCustomDropdownDisplay(el); });
 
 // 黄カカシ・黄指輪が選択されている枠は「完成させる」チェックを強制ON・操作不可にする
 function applyCompletedLock(recipeSelect){
@@ -1176,7 +1400,7 @@ function renderCalc(){
 }
 
 document.querySelectorAll('.active-recipe').forEach(el=>{
-  el.addEventListener('change', ()=>{ updateColorBorder(el); applyCompletedLock(el); renderCalc(); });
+  el.addEventListener('change', ()=>{ updateColorBorder(el); applyCompletedLock(el); syncCustomDropdownDisplay(el); renderCalc(); });
 });
 document.querySelectorAll('.active-completed').forEach(el=>{
   el.addEventListener('change', ()=>{
@@ -1201,22 +1425,23 @@ for(let i=0;i<6;i++){
         <input type="checkbox" class="stock-empty" data-idx="${i}">空欄
       </label>
     </div>
-    <select class="stock-recipe" data-idx="${i}">
-      ${recipeOptionsHTML(DEFAULT_STOCK_KEY)}
-    </select>
+    ${customRecipeDropdownHTML('stock-recipe', i, DEFAULT_STOCK_KEY)}
   `;
   stockContainer.appendChild(div);
 }
 document.querySelectorAll('.stock-recipe').forEach(el=>{
   updateColorBorder(el);
-  el.addEventListener('change', ()=>{ updateColorBorder(el); renderCalc(); });
+  syncCustomDropdownDisplay(el);
+  el.addEventListener('change', ()=>{ updateColorBorder(el); syncCustomDropdownDisplay(el); renderCalc(); });
 });
 document.querySelectorAll('.stock-empty').forEach(cb=>{
   cb.addEventListener('change', ()=>{
     const idx = cb.dataset.idx;
     const slotDiv = cb.closest('.stock-slot');
     const recipeSel = document.querySelector(`.stock-recipe[data-idx="${idx}"]`);
+    const customWrap = recipeSel.closest('.custom-select');
     recipeSel.disabled = cb.checked;
+    customWrap.classList.toggle('disabled', cb.checked);
     slotDiv.classList.toggle('empty', cb.checked);
     renderCalc();
   });
@@ -1501,7 +1726,7 @@ document.getElementById('target-search-btn').addEventListener('click', ()=>{
   resultDiv.innerHTML = statusHtml + comboHtml;
 });
 
-/* ============== PANEL 3: 達成可能スコア一覧 ============== */
+/* ============== 達成可能スコア一覧（手持ちで探すボタンの隣のボタン） ============== */
 document.getElementById('achievable-search-btn').addEventListener('click', ()=>{
   const rank = document.getElementById('rank-select').value;
   const resultDiv = document.getElementById('achievable-result');
@@ -1559,6 +1784,20 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ============== カスタムドロップダウンの初期化（イベント委任で一度だけ） ============== */
+initCustomDropdowns();
+
+/* ============== 折りたたみ（+ボタン）の初期化 ============== */
+document.querySelectorAll('.collapsible-toggle').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const targetId = btn.dataset.target;
+    const body = document.getElementById(targetId);
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    btn.classList.toggle('open', !isOpen);
   });
 });
 </script>
