@@ -193,9 +193,9 @@ select#rank-select{width:200px;}
 }
 .slot-row{
   display:grid;
-  grid-template-columns:54px 1fr 92px;
+  grid-template-columns:54px 1fr 78px;
   grid-template-rows:auto auto;
-  gap:14px 14px;
+  gap:14px 10px;
   align-items:center;
   padding:14px 0;
   border-bottom:1px dashed var(--steel-700);
@@ -348,19 +348,20 @@ select.color-金{border-left:3px solid var(--c-gold);}
   align-items:center;
   gap:9px;
   width:100%;
+  min-width:160px;
   background:var(--steel-900);
   border:1px solid var(--steel-600);
   color:var(--steel-100);
   font-family:var(--sans);
   font-size:14px;
   font-weight:600;
-  padding:10px 12px;
+  padding:11px 14px;
   border-radius:var(--radius);
   cursor:pointer;
   transition:border-color .15s;
   text-align:left;
 }
-.recipe-field .custom-select-trigger{font-size:15px;}
+.recipe-field .custom-select-trigger{font-size:15.5px; padding:12px 14px;}
 .custom-select-trigger:hover{border-color:var(--ember);}
 .custom-select.open .custom-select-trigger{border-color:var(--ember); box-shadow:0 0 0 3px rgba(217,118,59,.18);}
 .custom-select-label{flex:1;}
@@ -383,7 +384,7 @@ select.color-金{border-left:3px solid var(--c-gold);}
   border:1px solid var(--steel-600);
   border-radius:var(--radius);
   box-shadow:0 12px 28px rgba(0,0,0,.45);
-  max-height:280px;
+  max-height:420px;
   overflow-y:auto;
 }
 .custom-select.open .custom-select-list{display:block;}
@@ -528,7 +529,7 @@ select.color-金{border-left:3px solid var(--c-gold);}
   grid-template-columns:1fr 1fr;
   grid-template-rows:repeat(3, auto);
   gap:10px;
-  max-width:520px;
+  max-width:680px;
 }
 .stock-slot{
   background:var(--steel-900);
