@@ -627,11 +627,27 @@ button.primary:active{transform:translateY(1px);}
   border-radius:var(--radius);
   padding:9px 14px;
   margin-bottom:16px;
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:6px;
 }
-.solver-rank-note strong{
+.rank-select-inline{
+  font-family:var(--mono);
+  font-size:13px;
+  font-weight:700;
   color:var(--ember);
-  font-size:13.5px;
+  background:var(--steel-800);
+  border:1px solid var(--ember);
+  border-radius:4px;
+  padding:3px 8px;
+  cursor:pointer;
+  width:auto;
+  flex:0 0 auto;
+  max-width:100%;
 }
+.rank-select-inline:hover{filter:brightness(1.1);}
+.rank-select-inline:focus{outline:2px solid var(--ember); outline-offset:1px;}
 
 .solver-btn-row{
   display:flex;
@@ -951,7 +967,16 @@ footer{
     <div class="card">
       <h2 class="card-title">手持ちレシピでスコアを探す <span class="tag">SOLVER</span></h2>
       <p class="card-desc">このページのアクティブ3枚＋ストック（空きでない枚）から、<strong>交換ルール</strong>（連鎖交換含む）と<strong>完成／未完成の選択</strong>を組み合わせて何が実現できるか探します。各アクティブ枠は「そのまま」か「同色・同形のストック1枚に交換」のいずれかです。</p>
-      <div class="solver-rank-note" id="solver-rank-note">現在の鍛冶ランク：<strong id="solver-rank-value">4級</strong>（探索にはこのランクのボーナスが使われます。間違っている場合は上の「鍛冶ランク」で選び直してください）</div>
+      <div class="solver-rank-note" id="solver-rank-note">
+        現在の鍛冶ランク：
+        <select id="rank-select-solver" class="rank-select-inline">
+          <option value="4">4級（ボーナス +1）</option>
+          <option value="3">3級（ボーナス +2）</option>
+          <option value="2">2級（ボーナス +3）</option>
+          <option value="1">1級（ボーナス +4）</option>
+        </select>
+        （探索にはこのランクのボーナスが使われます）
+      </div>
       <div class="solver-btn-row">
         <button class="primary" id="target-search-btn">上の差分スコアを手持ちで探す</button>
         <button class="primary secondary" id="achievable-search-btn">今の手持ちで到達できるスコア一覧を見る</button>
@@ -1088,6 +1113,7 @@ footer{
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　鍛冶レシピのドロップダウンを、横列=形（カカシ／指輪／チャーム／腕輪／首飾り）・縦列=色（赤／青／黄／緑／金）のグリッド形式に変更し、スクロールなしで全25種類を一覧表示できるようにした。「目標までの差分」カードと「鍛冶ランク」カードの表示順を入れ替え。現在の鍛冶スコアの入力値に応じて鍛冶ランクを自動セットする機能を追加（49以下→4級／50〜149→3級／150以上→2級、空欄時は4級。自動セット後も選択肢のクリックで手動上書き可能）。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　アクティブスロットの「完成させてスコア化する」チェックボックスを削除し、常に完成として扱うようにした（計算式自体は変更なし）。「獲得鍛冶スコア」の表示を内訳カードのヘッダーに統合し、結果バナーを廃止してシンプルな構成にした。ストックスロットのドロップダウンに「空き」の選択肢を追加し、これを初期値に変更。従来の「空欄」チェックボックスは廃止（役割は同じ）。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　現在の鍛冶スコアが150以上のとき、既に手動で1級が選ばれている場合は2級に自動上書きしないように修正（150以上は1級・2級どちらもあり得るため）。150未満に下がった場合は1級が選ばれていても自動判定（4級／3級）に戻す。鍛冶ランクの自動判定は入力中には行わず、現在の鍛冶スコア欄からフォーカスが外れた（入力を終えた）タイミングでのみ確定するように変更（編集途中の中間値でランクが暴れる不具合を解消）。ヒューマンエラー防止のため、「手持ちレシピでスコアを探す」欄に現在選択中の鍛冶ランクを常時表示するようにした（ランク変更・自動セットに追従）。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　「手持ちレシピでスコアを探す」欄の鍛冶ランク表示を、その場で選び直せるドロップダウンに変更（上の「鍛冶ランク」と完全に同期し、どちらを操作しても両方に反映される）。わざわざ上に戻らずにランクを変更できるようにした。</li>
         </ul>
       </div>
     </div>
@@ -1406,14 +1432,13 @@ function updateColorBorder(select){
   if(color) select.classList.add('color-'+color);
 }
 
-const RANK_LABELS = {"4":"4級", "3":"3級", "2":"2級", "1":"1級"};
-
 function renderCalc(){
   const rank = document.getElementById('rank-select').value;
   const slots = readActiveSlots();
   const r = calcScore(slots, rank);
 
-  document.getElementById('solver-rank-value').textContent = RANK_LABELS[rank] || rank + '級';
+  const solverRankSelect = document.getElementById('rank-select-solver');
+  if(solverRankSelect.value !== rank) solverRankSelect.value = rank;
   document.getElementById('result-total').textContent = r.total;
   document.getElementById('bd-base').textContent = r.base;
   const colorEl = document.getElementById('bd-color');
@@ -1455,6 +1480,14 @@ document.querySelectorAll('.active-recipe').forEach(el=>{
   el.addEventListener('change', ()=>{ updateColorBorder(el); syncCustomDropdownDisplay(el); renderCalc(); });
 });
 document.getElementById('rank-select').addEventListener('change', renderCalc);
+
+// 「手持ちレシピでスコアを探す」欄のランクselectは、上の鍛冶ランクselectと完全に同期する。
+// ここで変更された場合も、本体（rank-select）の値を更新してrenderCalcを再実行する。
+document.getElementById('rank-select-solver').addEventListener('change', (e)=>{
+  const rankSelectMain = document.getElementById('rank-select');
+  rankSelectMain.value = e.target.value;
+  renderCalc();
+});
 
 /* ============== ストックスロット参照表 ============== */
 const stockContainer = document.getElementById('stock-slots');
