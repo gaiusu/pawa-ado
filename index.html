@@ -203,49 +203,6 @@ select#rank-select{width:200px;}
 }
 .slot-row:last-child{border-bottom:none;}
 .recipe-field select{font-size:15px;}
-.complete-toggle-row{
-  grid-column:1 / -1;
-  padding-left:68px;
-}
-.complete-toggle{
-  display:flex;
-  align-items:center;
-  gap:7px;
-  font-family:var(--mono);
-  font-size:11.5px;
-  color:var(--steel-300);
-  cursor:pointer;
-  user-select:none;
-}
-.complete-toggle input[type="checkbox"]{
-  width:14px;height:14px;
-  accent-color:var(--ember);
-  cursor:pointer;
-  margin:0;
-  flex-shrink:0;
-}
-.complete-toggle input[type="checkbox"]:disabled{
-  opacity:.5;
-  cursor:not-allowed;
-}
-.lock-note{
-  font-family:var(--mono);
-  font-size:10.5px;
-  color:var(--steel-600);
-  margin-left:21px;
-}
-.slot-row.incomplete{
-  background:rgba(200,70,58,.06);
-  border-radius:var(--radius);
-}
-.slot-row.incomplete .complete-toggle{color:var(--warn);}
-.slot-row.incomplete .slot-badge{
-  opacity:.4;
-}
-.slot-row.incomplete .slot-score .val{
-  color:var(--steel-600);
-  text-decoration:line-through;
-}
 .slot-badge{
   width:40px;height:40px;
   border-radius:50%;
@@ -374,37 +331,54 @@ select.color-金{border-left:3px solid var(--c-gold);}
 
 .custom-select-list{
   display:none;
-  position:absolute;
-  top:calc(100% + 4px);
-  left:0; right:0;
-  z-index:40;
-  margin:0; padding:4px;
+  position:fixed;
+  z-index:200;
+  margin:0; padding:10px;
   list-style:none;
   background:var(--steel-800);
   border:1px solid var(--steel-600);
   border-radius:var(--radius);
   box-shadow:0 12px 28px rgba(0,0,0,.45);
-  max-height:420px;
+  width:max-content;
+  max-width:min(92vw, 560px);
+  max-height:80vh;
   overflow-y:auto;
 }
-.custom-select.open .custom-select-list{display:block;}
-.custom-select-list::-webkit-scrollbar{width:6px;}
-.custom-select-list::-webkit-scrollbar-thumb{background:var(--steel-600); border-radius:3px;}
+.custom-select.open .custom-select-list{display:grid;}
+
+/* グリッド配置：横列=形（カカシ/指輪/チャーム/腕輪/首飾り）、縦列=色（赤/青/黄/緑/金） */
+.custom-option-grid{
+  grid-template-columns:auto repeat(5, 1fr);
+  gap:4px;
+}
+.grid-corner{}
+.grid-shape-head, .grid-color-head{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:700;
+  color:var(--steel-300);
+  padding:4px 2px;
+  white-space:nowrap;
+}
+.grid-shape-head{writing-mode:horizontal-tb;}
+.grid-color-head{justify-content:flex-end; gap:6px; padding-right:6px;}
 
 .custom-option{
   display:flex;
   align-items:center;
-  gap:9px;
-  padding:8px 10px;
-  border-radius:3px;
-  font-size:13.5px;
-  font-weight:600;
-  color:var(--steel-100);
+  justify-content:center;
+  width:42px;
+  height:42px;
+  border-radius:var(--radius);
   cursor:pointer;
+  border:1px solid transparent;
 }
 .custom-option:hover{background:var(--steel-700);}
-.custom-option.selected{background:rgba(217,118,59,.16); color:var(--ember);}
-.custom-option-label{flex:1;}
+.custom-option.selected{background:rgba(217,118,59,.16); border-color:var(--ember);}
+.custom-option-label{display:none;}
 
 /* 色見本：赤青黄緑はドット、金はリング状の枠で区別 */
 .color-swatch{
@@ -422,6 +396,8 @@ select.color-金{border-left:3px solid var(--c-gold);}
   border:2.5px solid var(--c-gold);
   box-shadow:0 0 0 1.5px var(--steel-900) inset;
 }
+.custom-option .color-swatch{width:20px; height:20px;}
+.custom-option .swatch-gold-ring{border-width:3px;}
 
 /* ---------- collapsible (+ボタンで開く折りたたみ) ---------- */
 .collapsible-toggle{
@@ -459,20 +435,24 @@ select.color-金{border-left:3px solid var(--c-gold);}
 }
 .collapsible-body.open{display:block;}
 
-/* ---------- result banner ---------- */
-.result-banner{
+/* ---------- result（内訳カードのヘッダーに統合） ---------- */
+.result-toggle{
+  flex-wrap:wrap;
+}
+.result-toggle-main{
+  flex:1;
   display:flex;
-  align-items:center;
+  align-items:baseline;
   justify-content:space-between;
   flex-wrap:wrap;
-  gap:24px;
-  background:linear-gradient(135deg, var(--steel-700) 0%, var(--steel-800) 100%);
-  border:1px solid var(--steel-600);
-  border-radius:var(--radius);
-  padding:26px 28px;
-  margin-bottom:24px;
+  gap:14px;
+  min-width:0;
 }
-.result-main{display:flex; align-items:baseline; gap:14px;}
+.result-inline{
+  display:flex;
+  align-items:baseline;
+  gap:12px;
+}
 .result-label{
   font-family:var(--mono);
   font-size:12px;
@@ -481,7 +461,7 @@ select.color-金{border-left:3px solid var(--c-gold);}
 }
 .result-num{
   font-family:var(--serif);
-  font-size:56px;
+  font-size:34px;
   font-weight:700;
   color:var(--ember);
   line-height:1;
@@ -490,6 +470,9 @@ select.color-金{border-left:3px solid var(--c-gold);}
   display:flex;
   gap:18px;
   flex-wrap:wrap;
+  margin-bottom:18px;
+  padding-bottom:18px;
+  border-bottom:1px dashed var(--steel-700);
 }
 .bd-item{
   font-family:var(--mono);
@@ -538,10 +521,6 @@ select.color-金{border-left:3px solid var(--c-gold);}
   padding:10px;
   transition:opacity .15s, border-color .15s;
 }
-.stock-slot.empty{
-  opacity:.45;
-  border-color:var(--steel-700);
-}
 .stock-slot .field-label{margin-bottom:6px; font-size:11px;}
 .stock-head{
   display:flex;
@@ -550,28 +529,27 @@ select.color-金{border-left:3px solid var(--c-gold);}
   margin-bottom:6px;
 }
 .stock-head .field-label{margin-bottom:0;}
-.empty-toggle{
-  display:flex;
-  align-items:center;
-  gap:5px;
-  font-family:var(--mono);
-  font-size:10.5px;
+
+/* 「空き」選択中のトリガー・選択肢の見た目（ストックスロット専用） */
+.custom-select.is-empty .custom-select-trigger{
+  border-style:dashed;
   color:var(--steel-300);
-  cursor:pointer;
-  user-select:none;
-  white-space:nowrap;
 }
-.empty-toggle input[type="checkbox"]{
-  width:13px;height:13px;
-  accent-color:var(--ember);
-  cursor:pointer;
-  margin:0;
+.custom-select-label-empty{
+  color:var(--steel-400);
+  font-style:italic;
 }
-.stock-slot select:disabled{
-  opacity:.4;
-  cursor:not-allowed;
-  border-left-color:var(--steel-700) !important;
+.custom-option-empty{
+  width:auto !important;
+  height:34px;
+  font-family:var(--mono);
+  font-size:12.5px;
+  color:var(--steel-300);
+  border-style:dashed;
+  border-color:var(--steel-700);
 }
+.custom-option-empty:hover{background:var(--steel-700); color:var(--steel-100);}
+.custom-option-empty.selected{background:rgba(217,118,59,.16); border-color:var(--ember); color:var(--ember);}
 .exchange-note{
   margin-top:16px;
   font-size:12px;
@@ -843,14 +821,19 @@ footer{
 }
 
 @media (max-width:640px){
-  .slot-row{grid-template-columns:40px 1fr;grid-template-rows:auto auto auto;}
+  .slot-row{grid-template-columns:40px 1fr;grid-template-rows:auto auto;}
   .slot-score{grid-column:2; text-align:left;}
-  .complete-toggle-row{padding-left:0;}
-  .result-banner{flex-direction:column; align-items:flex-start;}
+  .result-toggle-main{flex-direction:column; align-items:flex-start;}
   .target-row{flex-direction:column; align-items:stretch;}
+  .custom-option{width:34px; height:34px;}
+  .custom-option .color-swatch{width:16px; height:16px;}
+  .grid-shape-head, .grid-color-head{font-size:10px;}
 }
 @media (max-width:380px){
   .stock-grid{grid-template-columns:1fr;}
+  .custom-option{width:30px; height:30px;}
+  .custom-option .color-swatch{width:14px; height:14px;}
+  .custom-select-list{padding:6px;}
 }
 </style>
 </head>
@@ -874,22 +857,6 @@ footer{
   <section class="panel active" id="panel-calc">
 
     <div class="card">
-      <h2 class="card-title">鍛冶ランク <span class="tag">RANK</span></h2>
-      <p class="card-desc">同色・同形ボーナスの加算値は、プレイヤーの鍛冶ランクで変わります。</p>
-      <div class="rank-row">
-        <div>
-          <label class="field-label">現在の鍛冶ランク</label>
-          <select id="rank-select">
-            <option value="4">4級（ボーナス +1）</option>
-            <option value="3">3級（ボーナス +2）</option>
-            <option value="2">2級（ボーナス +3）</option>
-            <option value="1">1級（ボーナス +4）</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
       <h2 class="card-title">目標までの差分 <span class="tag">DIFF</span></h2>
       <p class="card-desc">現在の鍛冶スコアと目標到達スコアを入力すると、その差分（今回の鍛冶で稼ぐべきスコア）を自動で計算します。差分の探索は、このページ下部の「手持ちで探す」で行います。</p>
       <div class="target-row">
@@ -909,30 +876,42 @@ footer{
     </div>
 
     <div class="card">
+      <h2 class="card-title">鍛冶ランク <span class="tag">RANK</span></h2>
+      <p class="card-desc">同色・同形ボーナスの加算値は、プレイヤーの鍛冶ランクで変わります。<strong>上の「現在の鍛冶スコア」を入力すると自動でセットされます</strong>（49以下→4級／50〜149→3級／150以上→2級）。手動で選び直すこともできます。</p>
+      <div class="rank-row">
+        <div>
+          <label class="field-label">現在の鍛冶ランク</label>
+          <select id="rank-select">
+            <option value="4">4級（ボーナス +1）</option>
+            <option value="3">3級（ボーナス +2）</option>
+            <option value="2">2級（ボーナス +3）</option>
+            <option value="1">1級（ボーナス +4）</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
       <h2 class="card-title">アクティブスロット <span class="tag">ACTIVE × 3</span></h2>
       <p class="card-desc">1枠目（最上段）は最終スコアが <strong>2倍</strong> になります。カカシは隣接する枠のスコアを参照します。</p>
 
       <div class="slot-stack" id="active-slots"></div>
     </div>
 
-    <div class="result-banner">
-      <div class="result-main">
-        <span class="result-label">獲得鍛冶スコア</span>
-        <span class="result-num" id="result-total">0</span>
-      </div>
-      <div class="result-breakdown">
-        <div class="bd-item">基礎合計<span class="bd-val" id="bd-base">0</span></div>
-        <div class="bd-item">色ボーナス<span class="bd-val" id="bd-color">+0</span></div>
-        <div class="bd-item">形ボーナス<span class="bd-val" id="bd-shape">+0</span></div>
-      </div>
-    </div>
-
     <div class="card" id="detail-card">
-      <button type="button" class="collapsible-toggle" data-target="detail-collapse-body">
-        <span class="card-title" style="margin:0;">内訳 <span class="tag">DETAIL</span></span>
+      <button type="button" class="collapsible-toggle result-toggle" data-target="detail-collapse-body">
+        <span class="result-toggle-main">
+          <span class="card-title" style="margin:0;">内訳 <span class="tag">DETAIL</span></span>
+          <span class="result-inline"><span class="result-label">獲得鍛冶スコア</span><span class="result-num" id="result-total">0</span></span>
+        </span>
         <span class="collapsible-icon">+</span>
       </button>
       <div class="collapsible-body" id="detail-collapse-body">
+        <div class="result-breakdown">
+          <div class="bd-item">基礎合計<span class="bd-val" id="bd-base">0</span></div>
+          <div class="bd-item">色ボーナス<span class="bd-val" id="bd-color">+0</span></div>
+          <div class="bd-item">形ボーナス<span class="bd-val" id="bd-shape">+0</span></div>
+        </div>
         <table class="score-table" id="detail-table">
           <thead><tr><th>枠</th><th>レシピ</th><th>参照スコア</th><th>枠倍率後</th></tr></thead>
           <tbody></tbody>
@@ -956,7 +935,7 @@ footer{
 
     <div class="card">
       <h2 class="card-title">手持ちレシピでスコアを探す <span class="tag">SOLVER</span></h2>
-      <p class="card-desc">このページのアクティブ3枚＋ストック（空欄でない枚）から、<strong>交換ルール</strong>（連鎖交換含む）と<strong>完成／未完成の選択</strong>を組み合わせて何が実現できるか探します。各アクティブ枠は「そのまま」か「同色・同形のストック1枚に交換」のいずれかです。</p>
+      <p class="card-desc">このページのアクティブ3枚＋ストック（空きでない枚）から、<strong>交換ルール</strong>（連鎖交換含む）と<strong>完成／未完成の選択</strong>を組み合わせて何が実現できるか探します。各アクティブ枠は「そのまま」か「同色・同形のストック1枚に交換」のいずれかです。</p>
       <div class="solver-btn-row">
         <button class="primary" id="target-search-btn">上の差分スコアを手持ちで探す</button>
         <button class="primary secondary" id="achievable-search-btn">今の手持ちで到達できるスコア一覧を見る</button>
@@ -977,7 +956,7 @@ footer{
           <li><strong>アクティブスロット</strong>は縦に3枠（1枠目＝最上段／2枠目＝中段／3枠目＝最下段）。獲得鍛冶スコアは、この3枠に入っている鍛冶レシピの合計点です。</li>
           <li><strong>1枠目（最上段）</strong>のスコアは最終的に <strong>2倍</strong> になります。</li>
           <li><strong>ストックスロット</strong>は6枠あり、アクティブスロットと同色または同形の場合のみ交換可能。交換は各アクティブ枠につき1回まで。</li>
-          <li>ストックを所持していない枠は「空欄」チェックを入れることで、交換候補・逆算の探索対象から除外されます（アクティブスロットは常に3枠とも使用中のため空欄設定はありません）。</li>
+          <li>ストックを所持していない枠は、ドロップダウンで「空き」を選ぶことで、交換候補・逆算の探索対象から除外されます（アクティブスロットは常に3枠とも使用中のため空き設定はありません）。</li>
         </ul>
       </div>
     </div>
@@ -1090,6 +1069,8 @@ footer{
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-21</strong>　「達成可能スコア一覧」をタブ1の「手持ちで探す」ボタンの隣にボタンとして統合し、専用タブを廃止（2タブ構成に変更）。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-21</strong>　鍛冶レシピのドロップダウンをカスタムUIに変更し、選択肢に色見本（赤・青・黄・緑はドット、金は枠）を表示。内訳・交換可能な候補は、デフォルトで折りたたまれた状態にし、＋ボタンで開く形式に変更。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-22</strong>　現在の鍛冶スコア・目標到達スコアの入力欄を、初期値0から空欄に変更。毎回0を消してから入力する手間をなくした。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　鍛冶レシピのドロップダウンを、横列=形（カカシ／指輪／チャーム／腕輪／首飾り）・縦列=色（赤／青／黄／緑／金）のグリッド形式に変更し、スクロールなしで全25種類を一覧表示できるようにした。「目標までの差分」カードと「鍛冶ランク」カードの表示順を入れ替え。現在の鍛冶スコアの入力値に応じて鍛冶ランクを自動セットする機能を追加（49以下→4級／50〜149→3級／150以上→2級、空欄時は4級。自動セット後も選択肢のクリックで手動上書き可能）。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　アクティブスロットの「完成させてスコア化する」チェックボックスを削除し、常に完成として扱うようにした（計算式自体は変更なし）。「獲得鍛冶スコア」の表示を内訳カードのヘッダーに統合し、結果バナーを廃止してシンプルな構成にした。ストックスロットのドロップダウンに「空き」の選択肢を追加し、これを初期値に変更。従来の「空欄」チェックボックスは廃止（役割は同じ）。</li>
         </ul>
       </div>
     </div>
@@ -1116,11 +1097,16 @@ COLORS.forEach(c=>{
   });
 });
 
-function recipeOptionsHTML(selectedKey){
-  return ALL_RECIPES.map(r=>{
+function recipeOptionsHTML(selectedKey, includeEmpty){
+  let html = ALL_RECIPES.map(r=>{
     const sel = r.key === selectedKey ? ' selected' : '';
     return `<option value="${r.key}" data-color="${r.color}" data-shape="${r.shape}"${sel}>${r.color}${r.shape}</option>`;
   }).join('');
+  if(includeEmpty){
+    const sel = selectedKey === "空き" ? ' selected' : '';
+    html += `<option value="空き" data-empty="true"${sel}>空き</option>`;
+  }
+  return html;
 }
 
 // 色見本（ドット or 金は枠）のHTMLを返す
@@ -1133,31 +1119,81 @@ function colorSwatchHTML(color){
 
 // カスタムドロップダウンのHTML文字列を生成する。
 // 本物の<select>は隠して値の保持・既存ロジックとの連携に使い、見た目はこのカスタムUIで表示する。
+// 見た目はグリッド形式：横列=形（カカシ/指輪/チャーム/腕輪/首飾り）、縦列=色（赤/青/黄/緑/金）。
 // selectClass: 隠しselectに付与するクラス名（例: "active-recipe"）
 // dataIdx: data-idx属性の値
-// selectedKey: 初期選択キー（例: "赤指輪"）
-function customRecipeDropdownHTML(selectClass, dataIdx, selectedKey){
-  const selectedRecipe = ALL_RECIPES.find(r=>r.key===selectedKey) || ALL_RECIPES[0];
-  const optionsListHTML = ALL_RECIPES.map(r=>{
-    const isSelected = r.key === selectedKey ? ' selected' : '';
-    return `
-      <li class="custom-option${isSelected}" data-key="${r.key}" data-color="${r.color}" data-shape="${r.shape}" role="option">
-        ${colorSwatchHTML(r.color)}<span class="custom-option-label">${r.color}${r.shape}</span>
+// selectedKey: 初期選択キー（例: "赤指輪"。"空き"も可）
+// includeEmpty: trueの場合、グリッド最下段に「空き」を選べる行を追加する（ストックスロット専用）
+function customRecipeDropdownHTML(selectClass, dataIdx, selectedKey, includeEmpty){
+  const isEmptySelected = selectedKey === "空き";
+  const selectedRecipe = isEmptySelected ? null : (ALL_RECIPES.find(r=>r.key===selectedKey) || ALL_RECIPES[0]);
+
+  // 1行目：左上の空セル＋形の見出し5つ
+  let gridCellsHTML = `<li class="grid-corner" role="presentation"></li>`;
+  SHAPES.forEach(s=>{
+    gridCellsHTML += `<li class="grid-shape-head" role="presentation">${s}</li>`;
+  });
+  // 2行目以降：色の見出し1つ＋その色×5形のオプション5つ
+  COLORS.forEach(c=>{
+    gridCellsHTML += `<li class="grid-color-head" role="presentation">${colorSwatchHTML(c)}${c}</li>`;
+    SHAPES.forEach(s=>{
+      const key = c + s;
+      const isSelected = key === selectedKey ? ' selected' : '';
+      gridCellsHTML += `
+      <li class="custom-option${isSelected}" data-key="${key}" data-color="${c}" data-shape="${s}" role="option" title="${c}${s}">
+        ${colorSwatchHTML(c)}<span class="custom-option-label">${c}${s}</span>
       </li>`;
-  }).join('');
+    });
+  });
+  // 最終行：「空き」（ストックスロット専用。手持ちなしを表す特別な選択肢）
+  if(includeEmpty){
+    const isSelected = isEmptySelected ? ' selected' : '';
+    gridCellsHTML += `
+      <li class="grid-color-head" role="presentation"></li>
+      <li class="custom-option custom-option-empty${isSelected}" data-key="空き" data-empty="true" role="option" title="空き" style="grid-column: span 5;">
+        空き
+      </li>`;
+  }
+
+  const triggerLabelHTML = isEmptySelected
+    ? `<span class="custom-select-label custom-select-label-empty">空き</span>`
+    : `${colorSwatchHTML(selectedRecipe.color)}<span class="custom-select-label">${selectedRecipe.color}${selectedRecipe.shape}</span>`;
+
   return `
-    <div class="custom-select" data-for="${selectClass}" data-idx="${dataIdx}">
+    <div class="custom-select${isEmptySelected ? ' is-empty' : ''}" data-for="${selectClass}" data-idx="${dataIdx}">
       <select class="${selectClass} visually-hidden" data-idx="${dataIdx}">
-        ${recipeOptionsHTML(selectedKey)}
+        ${recipeOptionsHTML(selectedKey, includeEmpty)}
       </select>
       <button type="button" class="custom-select-trigger" data-idx="${dataIdx}">
-        ${colorSwatchHTML(selectedRecipe.color)}<span class="custom-select-label">${selectedRecipe.color}${selectedRecipe.shape}</span>
+        ${triggerLabelHTML}
         <span class="custom-select-caret">▾</span>
       </button>
-      <ul class="custom-select-list" role="listbox">
-        ${optionsListHTML}
+      <ul class="custom-select-list custom-option-grid" role="listbox">
+        ${gridCellsHTML}
       </ul>
     </div>`;
+}
+
+// 開いているリストをビューポート基準のfixed座標で、トリガーの直下（入らない場合は直上）に配置する
+function positionDropdownList(wrap){
+  const trigger = wrap.querySelector('.custom-select-trigger');
+  const list = wrap.querySelector('.custom-select-list');
+  const tRect = trigger.getBoundingClientRect();
+  // 一旦表示してサイズを測る（display:gridはopenクラスで既に適用済みの前提）
+  const listHeight = list.offsetHeight;
+  const listWidth = list.offsetWidth;
+  const margin = 4;
+  const spaceBelow = window.innerHeight - tRect.bottom;
+  const openUpward = spaceBelow < listHeight + margin && tRect.top > spaceBelow;
+  list.style.top = openUpward
+    ? `${Math.max(8, tRect.top - listHeight - margin)}px`
+    : `${tRect.bottom + margin}px`;
+  // 横方向は画面右端からあふれないように調整
+  let left = tRect.left;
+  if(left + listWidth > window.innerWidth - 8){
+    left = Math.max(8, window.innerWidth - listWidth - 8);
+  }
+  list.style.left = `${left}px`;
 }
 
 // カスタムドロップダウンの開閉・選択操作を有効化する（一度だけ呼び出せばイベント委任で全体に効く）
@@ -1170,7 +1206,10 @@ function initCustomDropdowns(){
       const wrap = trigger.closest('.custom-select');
       const willOpen = !wrap.classList.contains('open');
       openLists.forEach(w=>w.classList.remove('open'));
-      if(willOpen) wrap.classList.add('open');
+      if(willOpen){
+        wrap.classList.add('open');
+        positionDropdownList(wrap);
+      }
       return;
     }
 
@@ -1190,6 +1229,14 @@ function initCustomDropdowns(){
       openLists.forEach(w=>w.classList.remove('open'));
     }
   });
+
+  // スクロール・リサイズ時は開いているドロップダウンを閉じる（fixed配置のズレを防ぐ）
+  window.addEventListener('scroll', ()=>{
+    document.querySelectorAll('.custom-select.open').forEach(w=>w.classList.remove('open'));
+  }, {passive:true, capture:true});
+  window.addEventListener('resize', ()=>{
+    document.querySelectorAll('.custom-select.open').forEach(w=>w.classList.remove('open'));
+  });
 }
 
 // 隠しselectの現在値に合わせて、カスタムUI（トリガー表示・選択中マーク）を再同期する
@@ -1197,10 +1244,16 @@ function syncCustomDropdownDisplay(hiddenSelect){
   const wrap = hiddenSelect.closest('.custom-select');
   if(!wrap) return;
   const opt = hiddenSelect.selectedOptions[0];
-  const color = opt.dataset.color;
-  const shape = opt.dataset.shape;
   const trigger = wrap.querySelector('.custom-select-trigger');
-  trigger.innerHTML = `${colorSwatchHTML(color)}<span class="custom-select-label">${color}${shape}</span><span class="custom-select-caret">▾</span>`;
+  const isEmpty = opt.dataset.empty === "true";
+  wrap.classList.toggle('is-empty', isEmpty);
+  if(isEmpty){
+    trigger.innerHTML = `<span class="custom-select-label custom-select-label-empty">空き</span><span class="custom-select-caret">▾</span>`;
+  }else{
+    const color = opt.dataset.color;
+    const shape = opt.dataset.shape;
+    trigger.innerHTML = `${colorSwatchHTML(color)}<span class="custom-select-label">${color}${shape}</span><span class="custom-select-caret">▾</span>`;
+  }
   wrap.querySelectorAll('.custom-option').forEach(li=>{
     li.classList.toggle('selected', li.dataset.key === hiddenSelect.value);
   });
@@ -1309,36 +1362,15 @@ function buildSlotRow(index){
       <span class="ml">${slotLabels[index]}</span>
       <span class="val" id="slot-val-${index}">—</span>
     </div>
-    <div class="complete-toggle-row">
-      <label class="complete-toggle">
-        <input type="checkbox" class="active-completed" data-idx="${index}" checked>
-        この鍛冶アイテムを完成させてスコア化する
-      </label>
-      <span class="lock-note" style="display:none;">（黄カカシ・黄指輪は未完成にできません）</span>
-    </div>
   `;
   return row;
 }
 for(let i=0;i<3;i++){ activeContainer.appendChild(buildSlotRow(i)); }
 
-document.querySelectorAll('.active-recipe').forEach(el=>{ updateColorBorder(el); applyCompletedLock(el); syncCustomDropdownDisplay(el); });
+document.querySelectorAll('.active-recipe').forEach(el=>{ updateColorBorder(el); syncCustomDropdownDisplay(el); });
 
-// 黄カカシ・黄指輪が選択されている枠は「完成させる」チェックを強制ON・操作不可にする
-function applyCompletedLock(recipeSelect){
-  const idx = recipeSelect.dataset.idx;
-  const opt = recipeSelect.selectedOptions[0];
-  const checkbox = document.querySelector(`.active-completed[data-idx="${idx}"]`);
-  const row = recipeSelect.closest('.slot-row');
-  const locked = mustBeCompleted({color: opt.dataset.color, shape: opt.dataset.shape});
-  checkbox.disabled = locked;
-  if(locked){
-    checkbox.checked = true;
-    row.classList.remove('incomplete');
-  }
-  const lockNote = row.querySelector('.lock-note');
-  if(lockNote) lockNote.style.display = locked ? 'inline' : 'none';
-}
-
+// アクティブスロットは常に「完成」として扱う（完成/未完成の切り替えUIは削除済み。
+// 計算式側のcompletedフラグ自体は手持ち探索（ソルバー）でも使われているため残している）
 function readActiveSlots(){
   const slots = [];
   for(let i=0;i<3;i++){
@@ -1346,8 +1378,7 @@ function readActiveSlots(){
     const opt = sel.selectedOptions[0];
     const color = opt.dataset.color;
     const shape = opt.dataset.shape;
-    const completed = document.querySelector(`.active-completed[data-idx="${i}"]`).checked;
-    slots.push({color, shape, completed});
+    slots.push({color, shape, completed: true});
   }
   return slots;
 }
@@ -1355,7 +1386,7 @@ function readActiveSlots(){
 function updateColorBorder(select){
   COLORS.forEach(c=>select.classList.remove('color-'+c));
   const color = select.selectedOptions[0].dataset.color;
-  select.classList.add('color-'+color);
+  if(color) select.classList.add('color-'+color);
 }
 
 function renderCalc(){
@@ -1401,32 +1432,21 @@ function renderCalc(){
 }
 
 document.querySelectorAll('.active-recipe').forEach(el=>{
-  el.addEventListener('change', ()=>{ updateColorBorder(el); applyCompletedLock(el); syncCustomDropdownDisplay(el); renderCalc(); });
-});
-document.querySelectorAll('.active-completed').forEach(el=>{
-  el.addEventListener('change', ()=>{
-    const idx = el.dataset.idx;
-    const row = el.closest('.slot-row');
-    row.classList.toggle('incomplete', !el.checked);
-    renderCalc();
-  });
+  el.addEventListener('change', ()=>{ updateColorBorder(el); syncCustomDropdownDisplay(el); renderCalc(); });
 });
 document.getElementById('rank-select').addEventListener('change', renderCalc);
 
 /* ============== ストックスロット参照表 ============== */
 const stockContainer = document.getElementById('stock-slots');
-const DEFAULT_STOCK_KEY = "赤指輪";
+const DEFAULT_STOCK_KEY = "空き";
 for(let i=0;i<6;i++){
   const div = document.createElement('div');
   div.className = 'stock-slot';
   div.innerHTML = `
     <div class="stock-head">
       <label class="field-label">ストック ${i+1}</label>
-      <label class="empty-toggle">
-        <input type="checkbox" class="stock-empty" data-idx="${i}">空欄
-      </label>
     </div>
-    ${customRecipeDropdownHTML('stock-recipe', i, DEFAULT_STOCK_KEY)}
+    ${customRecipeDropdownHTML('stock-recipe', i, DEFAULT_STOCK_KEY, true)}
   `;
   stockContainer.appendChild(div);
 }
@@ -1435,30 +1455,17 @@ document.querySelectorAll('.stock-recipe').forEach(el=>{
   syncCustomDropdownDisplay(el);
   el.addEventListener('change', ()=>{ updateColorBorder(el); syncCustomDropdownDisplay(el); renderCalc(); });
 });
-document.querySelectorAll('.stock-empty').forEach(cb=>{
-  cb.addEventListener('change', ()=>{
-    const idx = cb.dataset.idx;
-    const slotDiv = cb.closest('.stock-slot');
-    const recipeSel = document.querySelector(`.stock-recipe[data-idx="${idx}"]`);
-    const customWrap = recipeSel.closest('.custom-select');
-    recipeSel.disabled = cb.checked;
-    customWrap.classList.toggle('disabled', cb.checked);
-    slotDiv.classList.toggle('empty', cb.checked);
-    renderCalc();
-  });
-});
 
-// isEmpty=true の枠は null を返す（手持ちなし）
+// 「空き」が選ばれている枠は null を返す（手持ちなし）
 function readStockSlots(){
   const slots = [];
   for(let i=0;i<6;i++){
-    const isEmpty = document.querySelector(`.stock-empty[data-idx="${i}"]`).checked;
-    if(isEmpty){
+    const sel = document.querySelector(`.stock-recipe[data-idx="${i}"]`);
+    const opt = sel.selectedOptions[0];
+    if(opt.dataset.empty === "true"){
       slots.push(null);
       continue;
     }
-    const sel = document.querySelector(`.stock-recipe[data-idx="${i}"]`);
-    const opt = sel.selectedOptions[0];
     const color = opt.dataset.color;
     const shape = opt.dataset.shape;
     slots.push({color, shape});
@@ -1493,6 +1500,7 @@ renderCalc();
 const currentScoreInput = document.getElementById('current-score');
 const goalScoreInput = document.getElementById('goal-score');
 const diffValueEl = document.getElementById('diff-value');
+const rankSelectEl = document.getElementById('rank-select');
 
 // 現在値以上で最も近い三桁ゾロ目（111,222,...,999）を返す。999超なら999のまま（上限）。
 function nearestTripleAbove(value){
@@ -1501,6 +1509,14 @@ function nearestTripleAbove(value){
     if(t >= value) return t;
   }
   return 999;
+}
+
+// 現在の鍛冶スコアから鍛冶ランクを自動判定する。
+// 49以下→4級／50〜149→3級／150以上→2級（1級は自動セット対象外。手動選択のみ）。
+function autoRankFromScore(value){
+  if(value <= 49) return "4";
+  if(value <= 149) return "3";
+  return "2";
 }
 
 function updateDiff(){
@@ -1515,6 +1531,9 @@ currentScoreInput.addEventListener('input', ()=>{
   const cur = parseInt(currentScoreInput.value, 10) || 0;
   goalScoreInput.value = nearestTripleAbove(cur);
   updateDiff();
+  // 現在スコアの入力値に応じて鍛冶ランクを自動セット（その後も手動で選び直せる）
+  rankSelectEl.value = autoRankFromScore(cur);
+  rankSelectEl.dispatchEvent(new Event('change', {bubbles:true}));
 });
 goalScoreInput.addEventListener('input', updateDiff);
 updateDiff();
@@ -1717,7 +1736,7 @@ document.getElementById('target-search-btn').addEventListener('click', ()=>{
   const found = allCombos.filter(item => item.r.total === diff);
 
   if(found.length === 0){
-    resultDiv.innerHTML = `<div class="target-status notfound">手持ちのアクティブ3枚・ストック（空欄を除く）の組み合わせでは、差分 ${diff} 点を作れる構成が見つかりませんでした。ストックの内容や鍛冶ランクをご確認ください。</div>`;
+    resultDiv.innerHTML = `<div class="target-status notfound">手持ちのアクティブ3枚・ストック（空きを除く）の組み合わせでは、差分 ${diff} 点を作れる構成が見つかりませんでした。ストックの内容や鍛冶ランクをご確認ください。</div>`;
     return;
   }
 
