@@ -618,6 +618,21 @@ button.primary{
 button.primary:hover{filter:brightness(1.08);}
 button.primary:active{transform:translateY(1px);}
 
+.solver-rank-note{
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--steel-300);
+  background:var(--steel-900);
+  border:1px solid var(--steel-700);
+  border-radius:var(--radius);
+  padding:9px 14px;
+  margin-bottom:16px;
+}
+.solver-rank-note strong{
+  color:var(--ember);
+  font-size:13.5px;
+}
+
 .solver-btn-row{
   display:flex;
   gap:12px;
@@ -877,7 +892,7 @@ footer{
 
     <div class="card">
       <h2 class="card-title">鍛冶ランク <span class="tag">RANK</span></h2>
-      <p class="card-desc">同色・同形ボーナスの加算値は、プレイヤーの鍛冶ランクで変わります。<strong>上の「現在の鍛冶スコア」を入力すると自動でセットされます</strong>（49以下→4級／50〜149→3級／150以上→2級）。手動で選び直すこともできます。</p>
+      <p class="card-desc">同色・同形ボーナスの加算値は、プレイヤーの鍛冶ランクで変わります。<strong>上の「現在の鍛冶スコア」を入力欄から離れる（編集を終える）と自動でセットされます</strong>（49以下→4級／50〜149→3級／150以上→2級）。手動で選び直すこともできます。なお150以上は1級・2級どちらもあり得るため、既に1級を選んでいる場合は自動セットで2級に戻しません（150未満に変更した場合は自動判定に戻ります）。</p>
       <div class="rank-row">
         <div>
           <label class="field-label">現在の鍛冶ランク</label>
@@ -936,6 +951,7 @@ footer{
     <div class="card">
       <h2 class="card-title">手持ちレシピでスコアを探す <span class="tag">SOLVER</span></h2>
       <p class="card-desc">このページのアクティブ3枚＋ストック（空きでない枚）から、<strong>交換ルール</strong>（連鎖交換含む）と<strong>完成／未完成の選択</strong>を組み合わせて何が実現できるか探します。各アクティブ枠は「そのまま」か「同色・同形のストック1枚に交換」のいずれかです。</p>
+      <div class="solver-rank-note" id="solver-rank-note">現在の鍛冶ランク：<strong id="solver-rank-value">4級</strong>（探索にはこのランクのボーナスが使われます。間違っている場合は上の「鍛冶ランク」で選び直してください）</div>
       <div class="solver-btn-row">
         <button class="primary" id="target-search-btn">上の差分スコアを手持ちで探す</button>
         <button class="primary secondary" id="achievable-search-btn">今の手持ちで到達できるスコア一覧を見る</button>
@@ -1071,6 +1087,7 @@ footer{
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-22</strong>　現在の鍛冶スコア・目標到達スコアの入力欄を、初期値0から空欄に変更。毎回0を消してから入力する手間をなくした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　鍛冶レシピのドロップダウンを、横列=形（カカシ／指輪／チャーム／腕輪／首飾り）・縦列=色（赤／青／黄／緑／金）のグリッド形式に変更し、スクロールなしで全25種類を一覧表示できるようにした。「目標までの差分」カードと「鍛冶ランク」カードの表示順を入れ替え。現在の鍛冶スコアの入力値に応じて鍛冶ランクを自動セットする機能を追加（49以下→4級／50〜149→3級／150以上→2級、空欄時は4級。自動セット後も選択肢のクリックで手動上書き可能）。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　アクティブスロットの「完成させてスコア化する」チェックボックスを削除し、常に完成として扱うようにした（計算式自体は変更なし）。「獲得鍛冶スコア」の表示を内訳カードのヘッダーに統合し、結果バナーを廃止してシンプルな構成にした。ストックスロットのドロップダウンに「空き」の選択肢を追加し、これを初期値に変更。従来の「空欄」チェックボックスは廃止（役割は同じ）。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　現在の鍛冶スコアが150以上のとき、既に手動で1級が選ばれている場合は2級に自動上書きしないように修正（150以上は1級・2級どちらもあり得るため）。150未満に下がった場合は1級が選ばれていても自動判定（4級／3級）に戻す。鍛冶ランクの自動判定は入力中には行わず、現在の鍛冶スコア欄からフォーカスが外れた（入力を終えた）タイミングでのみ確定するように変更（編集途中の中間値でランクが暴れる不具合を解消）。ヒューマンエラー防止のため、「手持ちレシピでスコアを探す」欄に現在選択中の鍛冶ランクを常時表示するようにした（ランク変更・自動セットに追従）。</li>
         </ul>
       </div>
     </div>
@@ -1389,11 +1406,14 @@ function updateColorBorder(select){
   if(color) select.classList.add('color-'+color);
 }
 
+const RANK_LABELS = {"4":"4級", "3":"3級", "2":"2級", "1":"1級"};
+
 function renderCalc(){
   const rank = document.getElementById('rank-select').value;
   const slots = readActiveSlots();
   const r = calcScore(slots, rank);
 
+  document.getElementById('solver-rank-value').textContent = RANK_LABELS[rank] || rank + '級';
   document.getElementById('result-total').textContent = r.total;
   document.getElementById('bd-base').textContent = r.base;
   const colorEl = document.getElementById('bd-color');
@@ -1531,8 +1551,23 @@ currentScoreInput.addEventListener('input', ()=>{
   const cur = parseInt(currentScoreInput.value, 10) || 0;
   goalScoreInput.value = nearestTripleAbove(cur);
   updateDiff();
-  // 現在スコアの入力値に応じて鍛冶ランクを自動セット（その後も手動で選び直せる）
-  rankSelectEl.value = autoRankFromScore(cur);
+  // 鍛冶ランクの自動判定はここでは行わない（下のblurイベントでのみ確定する）。
+  // 理由：「440」を「441」に直す際など、入力途中で一瞬「44」のような
+  // 中間値を経由することがあり、入力中に判定するとその中間値で
+  // ランクが暴れてしまう。入力欄から離れた（編集を終えた）タイミングで
+  // 確定させることで、編集途中の値に左右されないようにする。
+});
+
+// 現在スコア欄から離れたタイミングで、確定値に基づいて鍛冶ランクを自動判定する
+currentScoreInput.addEventListener('blur', ()=>{
+  const finalCur = parseInt(currentScoreInput.value, 10) || 0;
+  // 150以上のときだけ、既に手動で1級が選ばれていれば自動上書きしない
+  // （150以上は1級・2級どちらもあり得るため）。150未満の場合は、
+  // 1級が選ばれていても自動判定（4級／3級）に戻す。
+  const autoRank = autoRankFromScore(finalCur);
+  const keepManual1kyuu = (finalCur >= 150 && rankSelectEl.value === "1");
+  if(keepManual1kyuu) return;
+  rankSelectEl.value = autoRank;
   rankSelectEl.dispatchEvent(new Event('change', {bubbles:true}));
 });
 goalScoreInput.addEventListener('input', updateDiff);
