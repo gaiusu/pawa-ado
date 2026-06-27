@@ -674,6 +674,7 @@ button.primary.secondary{
 }
 .target-status.found{background:rgba(90,147,103,.12); border:1px solid var(--ok); color:var(--steel-100);}
 .target-status.notfound{background:rgba(200,70,58,.12); border:1px solid var(--warn); color:var(--steel-100);}
+.target-status.stale{background:var(--steel-900); border:1px dashed var(--steel-600); color:var(--steel-300);}
 
 .combo-list{
   display:flex;
@@ -1114,6 +1115,7 @@ footer{
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　アクティブスロットの「完成させてスコア化する」チェックボックスを削除し、常に完成として扱うようにした（計算式自体は変更なし）。「獲得鍛冶スコア」の表示を内訳カードのヘッダーに統合し、結果バナーを廃止してシンプルな構成にした。ストックスロットのドロップダウンに「空き」の選択肢を追加し、これを初期値に変更。従来の「空欄」チェックボックスは廃止（役割は同じ）。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　現在の鍛冶スコアが150以上のとき、既に手動で1級が選ばれている場合は2級に自動上書きしないように修正（150以上は1級・2級どちらもあり得るため）。150未満に下がった場合は1級が選ばれていても自動判定（4級／3級）に戻す。鍛冶ランクの自動判定は入力中には行わず、現在の鍛冶スコア欄からフォーカスが外れた（入力を終えた）タイミングでのみ確定するように変更（編集途中の中間値でランクが暴れる不具合を解消）。ヒューマンエラー防止のため、「手持ちレシピでスコアを探す」欄に現在選択中の鍛冶ランクを常時表示するようにした（ランク変更・自動セットに追従）。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　「手持ちレシピでスコアを探す」欄の鍛冶ランク表示を、その場で選び直せるドロップダウンに変更（上の「鍛冶ランク」と完全に同期し、どちらを操作しても両方に反映される）。わざわざ上に戻らずにランクを変更できるようにした。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　「手持ちレシピでスコアを探す」の検索結果は、ボタンを押した時点のスナップショットであり、その後にアクティブスロット・ストック・鍛冶ランクを変更しても自動では再計算されない仕様だったため、古い結果が表示されたまま残り「ストックを空きにしたのに結果に出てくる」といった誤解を招いていた。これを修正し、手持ちが変わった時点で表示中の結果を消し、「再度探してください」という案内に切り替えるようにした。</li>
         </ul>
       </div>
     </div>
@@ -1477,9 +1479,9 @@ function renderCalc(){
 }
 
 document.querySelectorAll('.active-recipe').forEach(el=>{
-  el.addEventListener('change', ()=>{ updateColorBorder(el); syncCustomDropdownDisplay(el); renderCalc(); });
+  el.addEventListener('change', ()=>{ updateColorBorder(el); syncCustomDropdownDisplay(el); renderCalc(); clearSolverResultsOnHandChange(); });
 });
-document.getElementById('rank-select').addEventListener('change', renderCalc);
+document.getElementById('rank-select').addEventListener('change', ()=>{ renderCalc(); clearSolverResultsOnHandChange(); });
 
 // 「手持ちレシピでスコアを探す」欄のランクselectは、上の鍛冶ランクselectと完全に同期する。
 // ここで変更された場合も、本体（rank-select）の値を更新してrenderCalcを再実行する。
@@ -1487,6 +1489,7 @@ document.getElementById('rank-select-solver').addEventListener('change', (e)=>{
   const rankSelectMain = document.getElementById('rank-select');
   rankSelectMain.value = e.target.value;
   renderCalc();
+  clearSolverResultsOnHandChange();
 });
 
 /* ============== ストックスロット参照表 ============== */
@@ -1506,7 +1509,7 @@ for(let i=0;i<6;i++){
 document.querySelectorAll('.stock-recipe').forEach(el=>{
   updateColorBorder(el);
   syncCustomDropdownDisplay(el);
-  el.addEventListener('change', ()=>{ updateColorBorder(el); syncCustomDropdownDisplay(el); renderCalc(); });
+  el.addEventListener('change', ()=>{ updateColorBorder(el); syncCustomDropdownDisplay(el); renderCalc(); clearSolverResultsOnHandChange(); });
 });
 
 // 「空き」が選ばれている枠は null を返す（手持ちなし）
@@ -1545,6 +1548,19 @@ function renderStockExchangeNote(activeSlots){
     note.className = 'exchange-note ok';
     note.innerHTML = '交換可能な候補（各アクティブ枠1回まで）：<br>' + matches.join('<br>');
   }
+}
+
+// アクティブスロット・ストックスロット・鍛冶ランクのいずれかが変更されたときに呼ぶ。
+// ソルバー（手持ちでスコアを探す）の結果は、ボタンを押した時点のスナップショットであり、
+// その後に手持ちを変えても自動で再計算されない。古い結果が表示されたまま残り、
+// 「ストックは空きにしたのに結果に出てくる」といった誤解を招くため、
+// 手持ちが変わった時点で表示中の結果を消し、再検索を促すメッセージに置き換える。
+function clearSolverResultsOnHandChange(){
+  [['target-result','上の差分スコアを手持ちで探す'], ['achievable-result','今の手持ちで到達できるスコア一覧を見る']].forEach(([id, btnLabel])=>{
+    const el = document.getElementById(id);
+    if(!el || !el.innerHTML) return; // まだ一度も検索していない場合は何もしない
+    el.innerHTML = `<div class="target-status stale">手持ち（レシピ・ストック・鍛冶ランク）が変更されました。「${btnLabel}」を押して再度探してください。</div>`;
+  });
 }
 
 renderCalc();
