@@ -585,6 +585,28 @@ select.color-金{border-left:3px solid var(--c-gold);}
 }
 .num-input:hover{border-color:var(--ember);}
 .num-input:focus{outline:none; border-color:var(--ember); box-shadow:0 0 0 3px rgba(217,118,59,.18);}
+.goal-score-row{
+  display:flex;
+  gap:8px;
+  align-items:stretch;
+}
+.goal-score-row .num-input{min-width:0;}
+.plus11-btn{
+  flex-shrink:0;
+  font-family:var(--mono);
+  font-size:13px;
+  font-weight:700;
+  color:var(--ember);
+  background:var(--steel-900);
+  border:1px solid var(--ember);
+  border-radius:var(--radius);
+  padding:0 12px;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:filter .15s, transform .1s;
+}
+.plus11-btn:hover{filter:brightness(1.15);}
+.plus11-btn:active{transform:translateY(1px);}
 .diff-block{
   display:flex;
   flex-direction:column;
@@ -898,7 +920,10 @@ footer{
         </div>
         <div class="field-block">
           <label class="field-label">目標到達スコア</label>
-          <input type="number" id="goal-score" value="" placeholder="0" class="num-input">
+          <div class="goal-score-row">
+            <input type="number" id="goal-score" value="" placeholder="0" class="num-input">
+            <button type="button" id="goal-plus11-btn" class="plus11-btn" title="目標到達スコアに11加算します">+11</button>
+          </div>
         </div>
         <div class="field-block diff-block">
           <span class="field-label">差分（今回の鍛冶で稼ぐスコア）</span>
@@ -1116,6 +1141,7 @@ footer{
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　現在の鍛冶スコアが150以上のとき、既に手動で1級が選ばれている場合は2級に自動上書きしないように修正（150以上は1級・2級どちらもあり得るため）。150未満に下がった場合は1級が選ばれていても自動判定（4級／3級）に戻す。鍛冶ランクの自動判定は入力中には行わず、現在の鍛冶スコア欄からフォーカスが外れた（入力を終えた）タイミングでのみ確定するように変更（編集途中の中間値でランクが暴れる不具合を解消）。ヒューマンエラー防止のため、「手持ちレシピでスコアを探す」欄に現在選択中の鍛冶ランクを常時表示するようにした（ランク変更・自動セットに追従）。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　「手持ちレシピでスコアを探す」欄の鍛冶ランク表示を、その場で選び直せるドロップダウンに変更（上の「鍛冶ランク」と完全に同期し、どちらを操作しても両方に反映される）。わざわざ上に戻らずにランクを変更できるようにした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　「手持ちレシピでスコアを探す」の検索結果は、ボタンを押した時点のスナップショットであり、その後にアクティブスロット・ストック・鍛冶ランクを変更しても自動では再計算されない仕様だったため、古い結果が表示されたまま残り「ストックを空きにしたのに結果に出てくる」といった誤解を招いていた。これを修正し、手持ちが変わった時点で表示中の結果を消し、「再度探してください」という案内に切り替えるようにした。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　「目標到達スコア」欄の横に「+11」ボタンを追加。押すたびに目標到達スコアに11が加算される（何回でも押せる）。</li>
         </ul>
       </div>
     </div>
@@ -1620,6 +1646,14 @@ currentScoreInput.addEventListener('blur', ()=>{
   rankSelectEl.dispatchEvent(new Event('change', {bubbles:true}));
 });
 goalScoreInput.addEventListener('input', updateDiff);
+
+// 「+11」ボタン：押すたびに目標到達スコアに11を加算する（何回でも押せる）
+document.getElementById('goal-plus11-btn').addEventListener('click', ()=>{
+  const cur = parseInt(goalScoreInput.value, 10) || 0;
+  goalScoreInput.value = cur + 11;
+  updateDiff();
+});
+
 updateDiff();
 
 function recipeKey(r){ return r.color + '_' + r.shape; }
