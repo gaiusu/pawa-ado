@@ -776,12 +776,96 @@ button.primary.secondary{
 .combo-card{
   display:grid;
   grid-template-columns:36px 1fr auto;
+  grid-template-rows:auto auto;
   align-items:center;
-  gap:14px;
+  gap:14px 14px;
   background:var(--steel-900);
   border:1px solid var(--steel-700);
   border-radius:var(--radius);
   padding:12px 16px;
+}
+/* next-state-panelはgrid全列にまたがって配置 */
+.next-state-panel{
+  grid-column:1/-1;
+  display:none;
+  border-top:1px dashed var(--steel-700);
+  padding-top:12px;
+  margin-top:-4px;
+}
+.next-state-panel.open{display:block;}
+.next-state-btn{
+  display:block;
+  margin-top:6px;
+  font-family:var(--mono);
+  font-size:10px;
+  color:var(--steel-500);
+  background:none;
+  border:1px dashed var(--steel-600);
+  border-radius:4px;
+  padding:3px 8px;
+  cursor:pointer;
+  white-space:nowrap;
+  width:100%;
+  text-align:center;
+}
+.next-state-btn:hover{border-color:var(--ember); color:var(--ember);}
+.next-state-btn.open{border-color:var(--ember); color:var(--ember);}
+/* ターン終了後の状態表示 */
+.nxt-state{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+@media(max-width:640px){.nxt-state{grid-template-columns:1fr;}}
+.nxt-section{display:flex; flex-direction:column; gap:6px;}
+.nxt-label{
+  font-family:var(--mono);
+  font-size:10px;
+  font-weight:700;
+  color:var(--steel-400);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-bottom:2px;
+}
+.nxt-zoro{
+  display:inline-block;
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:700;
+  padding:3px 8px;
+  border-radius:4px;
+}
+.nxt-zoro.triple{background:rgba(217,118,59,.15); color:var(--ember); border:1px solid rgba(217,118,59,.4);}
+.nxt-zoro.lower2{background:rgba(100,180,100,.12); color:#7ec97e; border:1px solid rgba(100,180,100,.3);}
+.nxt-zoro.none{color:var(--steel-500); background:none;}
+.nxt-slot{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--steel-400);
+  padding:3px 0;
+  border-bottom:1px solid var(--steel-800);
+  gap:8px;
+}
+.nxt-slot.empty .nxt-slot-val{color:var(--steel-600); font-style:italic;}
+.nxt-slot-val{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  color:var(--steel-100);
+  font-weight:600;
+  font-size:12px;
+}
+.nxt-slot-val.gray{color:var(--steel-600); font-weight:400;}
+.nxt-badge{
+  font-size:9px;
+  padding:1px 5px;
+  border-radius:3px;
+  background:rgba(217,118,59,.2);
+  color:var(--ember);
+  font-weight:700;
 }
 .combo-rank{
   font-family:var(--mono);
@@ -1606,6 +1690,99 @@ function nearestTripleAbove(value){
   return 999;
 }
 
+// ゾロ目判定
+function isTripleDigit(score){ return [111,222,333,444,555,666,777,888,999].includes(score); }
+function isLower2Repeat(score){
+  if(isTripleDigit(score)) return false;
+  const low = score % 100;
+  return low >= 11 && low % 11 === 0;
+}
+
+// 3桁ゾロ目スコアに対応する確定金レシピ（111→金カカシ、222→金指輪、...5種サイクル）
+const TRIPLE_GOLD_SHAPES = ["カカシ","指輪","チャーム","腕輪","首飾り"];
+function goldRecipeForTriple(score){
+  const idx = Math.round(score / 111) - 1;
+  return {color:"金", shape: TRIPLE_GOLD_SHAPES[idx % 5]};
+}
+
+// combo-card1件の結果から「ターン終了後のアクティブ・ストック状態」を表すHTMLを返す。
+// item.slots : [{color,shape,completed,slotIdx}] (slotIdx は0=1枠目,1=2枠目,2=3枠目)
+// currentScore : 今のターン開始時の鍛冶スコア
+// stockSlots : readStockSlots()の結果
+function renderNextStateHTML(item, currentScore, stockSlots){
+  const gainedScore = item.r.total;
+  const newScore = currentScore + gainedScore;
+
+  // ── アクティブスロット（ターン終了後）──
+  // 1) 未完成で残留する枠を求める（完成した枠は消滅、1枠目の未完成も消滅）
+  const survived = [];
+  item.slots.forEach((s, i)=>{
+    if(s.completed === false && i > 0) survived.push({...s, prevIdx: i});
+  });
+  // 残留枠は1つ上に移動（prevIdx 1→0, 2→1）
+  const nextActive = [null, null, null];
+  survived.forEach(s=>{ nextActive[s.prevIdx - 1] = {color:s.color, shape:s.shape, src:'残留'}; });
+
+  // 2) ゾロ目確定分を空き枠に追加
+  let zoroMsg = '';
+  const gold = isTripleDigit(newScore) ? goldRecipeForTriple(newScore) : null;
+  const kakashi = isLower2Repeat(newScore);
+  if(gold){
+    for(let i=0;i<3;i++){
+      if(!nextActive[i]){ nextActive[i] = {color:gold.color, shape:gold.shape, src:'金確定'}; break; }
+    }
+    zoroMsg = `<span class="nxt-zoro triple">🎯 3桁ゾロ目！${newScore} → 金${gold.shape}が確定補充</span>`;
+  } else if(kakashi){
+    for(let i=0;i<3;i++){
+      if(!nextActive[i]){ nextActive[i] = {color:'?', shape:'カカシ', src:'カカシ確定'}; break; }
+    }
+    zoroMsg = `<span class="nxt-zoro lower2">✨ 下2桁ゾロ目！${newScore} → カカシ確定補充（色ランダム）</span>`;
+  } else {
+    zoroMsg = `<span class="nxt-zoro none">次ターン開始スコア：${newScore}</span>`;
+  }
+
+  // アクティブスロット表示
+  const slotRowLabels = ['1枠目（最上段×2）','2枠目（中段）','3枠目（最下段）'];
+  let activeRows = '';
+  nextActive.forEach((s, i)=>{
+    if(!s){
+      activeRows += `<div class="nxt-slot empty">${slotRowLabels[i]} <span class="nxt-slot-val gray">ランダム補充</span></div>`;
+    } else {
+      const dotHtml = s.color === '?' ? `<span class="dot" style="background:var(--steel-500);"></span>` : `<span class="dot dot-${s.color}"></span>`;
+      const colorShape = s.color === '?' ? `?カカシ` : `${s.color}${s.shape}`;
+      const srcBadge = s.src === '残留' ? '' : `<span class="nxt-badge">${s.src}</span>`;
+      activeRows += `<div class="nxt-slot">
+        <span>${slotRowLabels[i]}</span>
+        <span class="nxt-slot-val">${dotHtml}${colorShape}${srcBadge}</span>
+      </div>`;
+    }
+  });
+
+  // ── ストックスロット（ターン終了後：そのまま残る）──
+  let stockRows = '';
+  stockSlots.forEach((s, i)=>{
+    if(!s){
+      stockRows += `<div class="nxt-slot empty">ストック${i+1} <span class="nxt-slot-val gray">空き</span></div>`;
+    } else {
+      stockRows += `<div class="nxt-slot">ストック${i+1} <span class="nxt-slot-val"><span class="dot dot-${s.color}"></span>${s.color}${s.shape}</span></div>`;
+    }
+  });
+
+  return `
+    <div class="nxt-state">
+      <div class="nxt-section">
+        <div class="nxt-label">アクティブスロット</div>
+        ${zoroMsg}
+        ${activeRows}
+      </div>
+      <div class="nxt-section">
+        <div class="nxt-label">ストックスロット</div>
+        ${stockRows}
+      </div>
+    </div>
+  `;
+}
+
 // 現在の鍛冶スコアから鍛冶ランクを自動判定する。
 // 49以下→4級／50〜149→3級／150以上→2級（1級は自動セット対象外。手動選択のみ）。
 function autoRankFromScore(value){
@@ -1796,7 +1973,7 @@ function comboDedupeKey(item){
   return item.slots.map(s=>recipeKey(s)+':'+s.source+':'+s.completed).join('|');
 }
 
-function renderComboList(items, maxShow){
+function renderComboList(items, maxShow, currentScore, stockSlots){
   const uniqueMap = new Map();
   items.forEach(item=>{
     const key = comboDedupeKey(item);
@@ -1809,6 +1986,10 @@ function renderComboList(items, maxShow){
     return ia - ib;
   });
   const shown = unique.slice(0, maxShow);
+  // 次ターン状態を表示できるのは currentScore と stockSlots が渡されている時のみ
+  const showNextState = (currentScore != null && stockSlots != null);
+  // combo-cardにユニークなIDを振るためのプレフィックスをランダム生成
+  const pfx = 'ns' + Math.random().toString(36).slice(2,7);
 
   let html = '<div class="combo-list">';
   shown.forEach((item, idx)=>{
@@ -1821,11 +2002,23 @@ function renderComboList(items, maxShow){
         : '';
       return `<span class="combo-pill${topClass}"><span class="dot dot-${s.color}"></span>${label} ${s.color}${s.shape}${srcTag}${statusTag}</span>`;
     }).join('<span class="combo-arrow">→</span>');
+
+    const panelId = `${pfx}-${idx}`;
+    const nextStateBtn = showNextState
+      ? `<button class="next-state-btn" data-panel="${panelId}">ターン終了後 ▾</button>`
+      : '';
+    const nextStatePanel = showNextState
+      ? `<div class="next-state-panel" id="${panelId}">
+           ${renderNextStateHTML(item, currentScore, stockSlots)}
+         </div>`
+      : '';
+
     html += `
       <div class="combo-card">
         <div class="combo-rank">${idx+1}</div>
         <div class="combo-slots">${pillsHtml}</div>
-        <div class="combo-meta">合計<span class="combo-score">${item.r.total}</span></div>
+        <div class="combo-meta">合計<span class="combo-score">${item.r.total}</span>${nextStateBtn}</div>
+        ${nextStatePanel}
       </div>
     `;
   });
@@ -1859,7 +2052,8 @@ document.getElementById('target-search-btn').addEventListener('click', ()=>{
   }
 
   const MAX_SHOW = 150;
-  const {html: comboHtml, uniqueCount} = renderComboList(found, MAX_SHOW);
+  const currentScore = parseInt(document.getElementById('current-score').value,10)||0;
+  const {html: comboHtml, uniqueCount} = renderComboList(found, MAX_SHOW, currentScore, stockSlots);
   const statusHtml = `<div class="target-status found">差分 ${diff} 点を、手持ちレシピだけで作れる構成が ${uniqueCount} 通り見つかりました${uniqueCount>MAX_SHOW ? `（上位 ${MAX_SHOW} 件を表示）` : ''}。</div>`;
   resultDiv.innerHTML = statusHtml + comboHtml;
 });
@@ -1886,9 +2080,10 @@ document.getElementById('achievable-search-btn').addEventListener('click', ()=>{
 
   let html = `<div class="target-status found">今の手持ちから到達できるスコアは ${scoresDesc.length} 種類見つかりました（降順）。スコアをクリックすると組み合わせが展開されます。</div>`;
   html += '<div class="score-list" id="score-list">';
+  const currentScore = parseInt(document.getElementById('current-score').value,10)||0;
   scoresDesc.forEach((score, idx)=>{
     const combosForScore = byScore.get(score);
-    const {html: comboHtml, uniqueCount} = renderComboList(combosForScore, 150);
+    const {html: comboHtml, uniqueCount} = renderComboList(combosForScore, 150, currentScore, stockSlots);
     html += `
       <div class="score-item">
         <button class="score-row-btn" data-score-idx="${idx}">
@@ -1913,6 +2108,19 @@ document.getElementById('achievable-search-btn').addEventListener('click', ()=>{
       btn.classList.toggle('open', !isOpen);
     });
   });
+});
+
+/* ============== 「ターン終了後 ▾」ボタンの開閉（イベント委任） ============== */
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.next-state-btn');
+  if(!btn) return;
+  const panelId = btn.dataset.panel;
+  const panel = document.getElementById(panelId);
+  if(!panel) return;
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  btn.classList.toggle('open', !isOpen);
+  btn.textContent = isOpen ? 'ターン終了後 ▾' : 'ターン終了後 ▲';
 });
 
 /* ============== タブ切り替え ============== */
