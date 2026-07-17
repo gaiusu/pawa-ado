@@ -1201,7 +1201,7 @@ footer{
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="solver-card">
       <h2 class="card-title">手持ちレシピでスコアを探す <span class="tag">SOLVER</span></h2>
       <p class="card-desc">このページのアクティブ3枚＋ストック（空きでない枚）から、<strong>交換ルール</strong>（連鎖交換含む）と<strong>完成／未完成の選択</strong>を組み合わせて何が実現できるか探します。各アクティブ枠は「そのまま」か「同色・同形のストック1枚に交換」のいずれかです。</p>
       <div class="solver-rank-note" id="solver-rank-note">
@@ -2563,7 +2563,7 @@ function currentSequentialStep(){
 
 function renderSequentialStep(){
   const step = currentSequentialStep();
-  if(!step){ closeSequentialRegistration(); return; }
+  if(!step){ closeSequentialRegistration(true); return; }
 
   const selClass = step.type === 'active' ? 'active-recipe' : 'stock-recipe';
   const hiddenSelect = document.querySelector(`.${selClass}[data-idx="${step.idx}"]`);
@@ -2585,24 +2585,30 @@ function openSequentialRegistration(){
   renderSequentialStep();
 }
 
-function closeSequentialRegistration(){
+function closeSequentialRegistration(completed){
   sequentialState.open = false;
   sequentialOverlay.classList.remove('open');
+  // 全枠回答し終えた／ストックで「空き(選択を終了する)」を選んで終了した場合のみ、
+  // 続けて使うであろう「手持ちレシピでスコアを探す」欄までスクロールする
+  // （×ボタンや背景クリックでの途中キャンセル時はスクロールしない）
+  if(completed){
+    document.getElementById('solver-card').scrollIntoView({behavior:'smooth', block:'start'});
+  }
 }
 
 function advanceSequentialRegistration(){
   sequentialState.stepIndex += 1;
   if(sequentialState.stepIndex >= SEQUENTIAL_STEPS.length){
-    closeSequentialRegistration();
+    closeSequentialRegistration(true);
   } else {
     renderSequentialStep();
   }
 }
 
 document.getElementById('sequential-register-btn').addEventListener('click', openSequentialRegistration);
-document.getElementById('sequential-modal-close').addEventListener('click', closeSequentialRegistration);
+document.getElementById('sequential-modal-close').addEventListener('click', ()=> closeSequentialRegistration(false));
 sequentialOverlay.addEventListener('click', (e)=>{
-  if(e.target === sequentialOverlay) closeSequentialRegistration();
+  if(e.target === sequentialOverlay) closeSequentialRegistration(false);
 });
 
 sequentialGridEl.addEventListener('click', (e)=>{
@@ -2630,7 +2636,7 @@ sequentialGridEl.addEventListener('click', (e)=>{
   //   まだ質問していない後続のストック枠に古い値が残っていた場合も、矛盾しないよう空きに揃える）
   if(step.type === 'stock' && isEmpty){
     clearRemainingStockSlots(step.idx);
-    closeSequentialRegistration();
+    closeSequentialRegistration(true);
     return;
   }
 
