@@ -1367,6 +1367,7 @@ footer{
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　鍛冶レシピのドロップダウンを、横列=形（カカシ／指輪／チャーム／腕輪／首飾り）・縦列=色（赤／青／黄／緑／金）のグリッド形式に変更し、スクロールなしで全25種類を一覧表示できるようにした。「目標までの差分」カードと「鍛冶ランク」カードの表示順を入れ替え。現在の鍛冶スコアの入力値に応じて鍛冶ランクを自動セットする機能を追加（49以下→4級／50〜149→3級／150以上→2級、空欄時は4級。自動セット後も選択肢のクリックで手動上書き可能）。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　アクティブスロットの「完成させてスコア化する」チェックボックスを削除し、常に完成として扱うようにした（計算式自体は変更なし）。「獲得鍛冶スコア」の表示を内訳カードのヘッダーに統合し、結果バナーを廃止してシンプルな構成にした。ストックスロットのドロップダウンに「空き」の選択肢を追加し、これを初期値に変更。従来の「空欄」チェックボックスは廃止（役割は同じ）。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　現在の鍛冶スコアが150以上のとき、既に手動で1級が選ばれている場合は2級に自動上書きしないように修正（150以上は1級・2級どちらもあり得るため）。150未満に下がった場合は1級が選ばれていても自動判定（4級／3級）に戻す。鍛冶ランクの自動判定は入力中には行わず、現在の鍛冶スコア欄からフォーカスが外れた（入力を終えた）タイミングでのみ確定するように変更（編集途中の中間値でランクが暴れる不具合を解消）。ヒューマンエラー防止のため、「手持ちレシピでスコアを探す」欄に現在選択中の鍛冶ランクを常時表示するようにした（ランク変更・自動セットに追従）。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">(反映漏れ分)</strong>　「鍛冶ランク」カード・「手持ちレシピでスコアを探す」カードの説明文を、短い要約1文＋「詳細」ボタン（クリックで折りたたみが開き、長い説明が読める）の構成に変更。既存の`.collapsible-toggle`／`.collapsible-body`の仕組み（内訳・交換候補と同じ）をそのまま再利用したもので、新規の関数追加はなし。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　「手持ちレシピでスコアを探す」欄の鍛冶ランク表示を、その場で選び直せるドロップダウンに変更（上の「鍛冶ランク」と完全に同期し、どちらを操作しても両方に反映される）。わざわざ上に戻らずにランクを変更できるようにした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　「手持ちレシピでスコアを探す」の検索結果は、ボタンを押した時点のスナップショットであり、その後にアクティブスロット・ストック・鍛冶ランクを変更しても自動では再計算されない仕様だったため、古い結果が表示されたまま残り「ストックを空きにしたのに結果に出てくる」といった誤解を招いていた。これを修正し、手持ちが変わった時点で表示中の結果を消し、「再度探してください」という案内に切り替えるようにした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-06-26</strong>　「目標到達スコア」欄の横に「+11」ボタンを追加。押すたびに目標到達スコアに11が加算される（何回でも押せる）。</li>
@@ -1376,6 +1377,7 @@ footer{
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">(反映漏れ分)</strong>　「連続で登録」を全ステップ回答し終えた場合、またはストックの早期終了で自然に完了した場合のみ「手持ちレシピでスコアを探す」欄まで自動スクロールするようにした。×ボタンや背景クリックによる途中キャンセル時はスクロールしない。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-07-17</strong>　「手持ちレシピでスコアを探す」の一覧で、どのストック番号と交換したかが違うだけでアクティブ3枠の色・形・完成状態が全く同一になる候補が別々の件として重複表示されていた不具合を修正。表示上の重複排除キー（`comboDedupeKey`）から交換元のストック番号情報を外し、見た目が完全一致する候補は1件にまとめて表示し、件数「○○通り」からも重複分を除外するようにした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-07-17</strong>　全体的なバグ・仕様乖離の点検を実施。ロジック本体（`calcScore`／`computeStockAfterExchange`／`isValidFinalAssignment`等）には問題は見つからなかったが、タブ2の説明文2箇所が実装と乖離していたため修正：①「スロット構造」に残っていた「アクティブスロットは常に3枠とも使用中のため空き設定はありません」という古い記述（「未選択です」機能導入前の説明のまま）を削除し、未選択時の挙動の説明に置き換え。②「完成させない（スコア化しない）選択」が、あたかもアクティブスロットに直接トグルがあるかのように読める記述だったため、「これはゲーム側のルールの説明であり、このツール自体には手動切替ボタンは無く、ソルバーの組み合わせ探索の中だけで使われる」旨を明記。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-07-18</strong>　「ターン終了後」プレビューで、未完成のまま残留する枠が「元の枠番号から1つ上」に固定でしか繰り上がらず、間に完成（消滅）した枠が複数あっても一番上まで詰められない不具合を修正。例：1・2枠目が完成、3枠目が未完成で残留、かつそのターンで111達成 → 修正前は「金カカシ／黄チャーム／ランダム補充」（3枠目の残留アイテムが2枠目までしか上がらない）と誤表示していたが、正しくは残留アイテムが一番上まで詰められ「黄チャーム／金カカシ／ランダム補充」となる。残留枠の算出を「元の順序を保ったまま上から順に空きを埋める」方式に変更（`renderNextStateHTML`内）。jsdomで複数パターンの回帰テストを実施し、修正後の挙動を確認済み。</li>
         </ul>
       </div>
     </div>
@@ -1941,13 +1943,15 @@ function renderNextStateHTML(item, currentScore, stockSlots){
 
   // ── アクティブスロット（ターン終了後）──
   // 1) 未完成で残留する枠を求める（完成した枠は消滅、1枠目の未完成も消滅）
+  //    残留枠は「元の枠番号から1つ上」に固定でずらすのではなく、
+  //    完成して消えた枠の分だけ詰められるだけ詰めて（＝間に完成枠しかなければ一番上まで）上がる。
+  //    そのため、元の上下関係（順序）を保ったまま、上から順に空きを埋める形で配置する。
   const survived = [];
   item.slots.forEach((s, i)=>{
-    if(s.completed === false && i > 0) survived.push({...s, prevIdx: i});
+    if(s.completed === false && i > 0) survived.push({color:s.color, shape:s.shape});
   });
-  // 残留枠は1つ上に移動（prevIdx 1→0, 2→1）
   const nextActive = [null, null, null];
-  survived.forEach(s=>{ nextActive[s.prevIdx - 1] = {color:s.color, shape:s.shape, src:'残留'}; });
+  survived.forEach((s, idx)=>{ nextActive[idx] = {color:s.color, shape:s.shape, src:'残留'}; });
 
   // 2) ゾロ目確定分を空き枠に追加
   let zoroMsg = '';
