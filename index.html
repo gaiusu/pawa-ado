@@ -1144,7 +1144,14 @@ footer{
 
     <div class="card">
       <h2 class="card-title">鍛冶ランク <span class="tag">RANK</span></h2>
-      <p class="card-desc">同色・同形ボーナスの加算値は、プレイヤーの鍛冶ランクで変わります。<strong>上の「現在の鍛冶スコア」を入力欄から離れる（編集を終える）と自動でセットされます</strong>（49以下→4級／50〜149→3級／150以上→2級）。手動で選び直すこともできます。なお150以上は1級・2級どちらもあり得るため、既に1級を選んでいる場合は自動セットで2級に戻しません（150未満に変更した場合は自動判定に戻ります）。</p>
+      <p class="card-desc">同色・同形ボーナスの加算値は鍛冶ランクで決まります。現在スコアの入力を確定すると自動セットされます（手動変更も可）。</p>
+      <button type="button" class="collapsible-toggle" data-target="rank-desc-detail-body" style="margin-bottom:12px;">
+        <span style="flex:1; text-align:left; font-size:13px; color:var(--steel-300); font-family:var(--mono);">詳細</span>
+        <span class="collapsible-icon">+</span>
+      </button>
+      <div class="collapsible-body" id="rank-desc-detail-body">
+        <p class="card-desc">上の「現在の鍛冶スコア」を入力欄から離れる（編集を終える）と自動でセットされます（49以下→4級／50〜149→3級／150以上→2級）。手動で選び直すこともできます。なお150以上は1級・2級どちらもあり得るため、既に1級を選んでいる場合は自動セットで2級に戻しません（150未満に変更した場合は自動判定に戻ります）。</p>
+      </div>
       <div class="rank-row">
         <div>
           <label class="field-label">現在の鍛冶ランク</label>
@@ -1203,7 +1210,14 @@ footer{
 
     <div class="card" id="solver-card">
       <h2 class="card-title">手持ちレシピでスコアを探す <span class="tag">SOLVER</span></h2>
-      <p class="card-desc">このページのアクティブ3枚＋ストック（空きでない枚）から、<strong>交換ルール</strong>（連鎖交換含む）と<strong>完成／未完成の選択</strong>を組み合わせて何が実現できるか探します。各アクティブ枠は「そのまま」か「同色・同形のストック1枚に交換」のいずれかです。</p>
+      <p class="card-desc">アクティブ3枚＋ストックから、交換ルールを踏まえて実現可能な組み合わせを探します。</p>
+      <button type="button" class="collapsible-toggle" data-target="solver-desc-detail-body" style="margin-bottom:12px;">
+        <span style="flex:1; text-align:left; font-size:13px; color:var(--steel-300); font-family:var(--mono);">詳細</span>
+        <span class="collapsible-icon">+</span>
+      </button>
+      <div class="collapsible-body" id="solver-desc-detail-body">
+        <p class="card-desc">このページのアクティブ3枚＋ストック（空きでない枚）から、<strong>交換ルール</strong>（連鎖交換含む）と<strong>完成／未完成の選択</strong>を組み合わせて何が実現できるか探します。各アクティブ枠は「そのまま」か「同色・同形のストック1枚に交換」のいずれかです。</p>
+      </div>
       <div class="solver-rank-note" id="solver-rank-note">
         現在の鍛冶ランク：
         <select id="rank-select-solver" class="rank-select-inline">
@@ -1234,7 +1248,8 @@ footer{
           <li><strong>アクティブスロット</strong>は縦に3枠（1枠目＝最上段／2枠目＝中段／3枠目＝最下段）。獲得鍛冶スコアは、この3枠に入っている鍛冶レシピの合計点です。</li>
           <li><strong>1枠目（最上段）</strong>のスコアは最終的に <strong>2倍</strong> になります。</li>
           <li><strong>ストックスロット</strong>は6枠あり、アクティブスロットと同色または同形の場合のみ交換可能。交換は各アクティブ枠につき1回まで。</li>
-          <li>ストックを所持していない枠は、ドロップダウンで「空き」を選ぶことで、交換候補・逆算の探索対象から除外されます（アクティブスロットは常に3枠とも使用中のため空き設定はありません）。</li>
+          <li>ストックを所持していない枠は、ドロップダウンで「空き」を選ぶことで、交換候補・逆算の探索対象から除外されます。</li>
+          <li>アクティブスロットには「空き」の代わりに「未選択です」という選択肢があります。1枠でも「未選択です」のままだと、スコア計算・交換候補・「手持ちレシピでスコアを探す」はすべて行われず、案内表示に切り替わります（すべての枠にレシピを選択して初めて計算されます）。</li>
         </ul>
       </div>
     </div>
@@ -1313,7 +1328,8 @@ footer{
       <h2 class="card-title">完成させない（スコア化しない）選択</h2>
       <div class="note-block">
         <ul>
-          <li>アクティブスロットに置かれている鍛冶レシピは、あえて<strong>完成させずスコア化しない</strong>ことを選べます。</li>
+          <li><strong>これはゲーム側のルールの説明です</strong>：実際の鍛冶では、アクティブスロットに置かれている鍛冶レシピを、あえて<strong>完成させずスコア化しない</strong>という選択ができます。</li>
+          <li><strong>このツールの「アクティブスロット」欄自体には、完成/未完成を手動で切り替えるボタンはありません</strong>（常に完成させる想定で計算します）。この完成/未完成の概念が使われるのは、下の「手持ちレシピでスコアを探す」（ソルバー）が全組み合わせを探索するときだけです。一覧に出てくる候補の中に「未完成」タグが付いた枠が含まれるのはこのためです。</li>
           <li>未完成にした枠の<strong>最終加算スコアは0</strong>になります。</li>
           <li>未完成にしても、その枠に置かれているレシピの<strong>色・形・参照用のスコアはそのまま存在する</strong>ため、<strong>カカシの隣接参照には影響しません</strong>（1枠目が未完成でも、他の枠から参照されるときは2倍後の値が使われます）。</li>
           <li>未完成の枠は<strong>同色・同形ボーナスの判定対象から外れます</strong>（完成している枠だけでカウントします）。</li>
@@ -1359,6 +1375,7 @@ footer{
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">(反映漏れ分)</strong>　「連続で登録」機能を新設。アクティブスロット1〜3枠目→ストックスロット1〜6枠目の順に、質問形式のモーダルで1枠ずつ設定していけるガイド付き一括入力フローを追加。ストックの入力中に「空き」を選ぶと、それ以降のストック枠は入力せず自動的に空きへ揃えて早期終了する。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">(反映漏れ分)</strong>　「連続で登録」を全ステップ回答し終えた場合、またはストックの早期終了で自然に完了した場合のみ「手持ちレシピでスコアを探す」欄まで自動スクロールするようにした。×ボタンや背景クリックによる途中キャンセル時はスクロールしない。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-07-17</strong>　「手持ちレシピでスコアを探す」の一覧で、どのストック番号と交換したかが違うだけでアクティブ3枠の色・形・完成状態が全く同一になる候補が別々の件として重複表示されていた不具合を修正。表示上の重複排除キー（`comboDedupeKey`）から交換元のストック番号情報を外し、見た目が完全一致する候補は1件にまとめて表示し、件数「○○通り」からも重複分を除外するようにした。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-07-17</strong>　全体的なバグ・仕様乖離の点検を実施。ロジック本体（`calcScore`／`computeStockAfterExchange`／`isValidFinalAssignment`等）には問題は見つからなかったが、タブ2の説明文2箇所が実装と乖離していたため修正：①「スロット構造」に残っていた「アクティブスロットは常に3枠とも使用中のため空き設定はありません」という古い記述（「未選択です」機能導入前の説明のまま）を削除し、未選択時の挙動の説明に置き換え。②「完成させない（スコア化しない）選択」が、あたかもアクティブスロットに直接トグルがあるかのように読める記述だったため、「これはゲーム側のルールの説明であり、このツール自体には手動切替ボタンは無く、ソルバーの組み合わせ探索の中だけで使われる」旨を明記。</li>
         </ul>
       </div>
     </div>
