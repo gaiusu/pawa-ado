@@ -599,13 +599,13 @@ select.color-金{border-left:3px solid var(--c-gold);}
 
 /* ---------- target finder ---------- */
 .target-row{
-  display:flex;
+  display:grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
   gap:16px;
   align-items:flex-end;
-  flex-wrap:wrap;
   margin-bottom:24px;
 }
-.target-row .field-block{min-width:160px;}
+.target-row .field-block{min-width:0;}
 .num-input{
   width:100%;
   background:var(--steel-900);
@@ -659,6 +659,22 @@ select.color-金{border-left:3px solid var(--c-gold);}
   line-height:1;
 }
 .diff-value.negative{color:var(--warn);}
+.rank-sequential-row{
+  display:grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  gap:16px;
+  align-items:end;
+  margin-top:6px;
+}
+.rank-sequential-col{
+  grid-column:1;
+  min-width:0;
+}
+.diff-sequential-btn{
+  grid-column:2;
+  white-space:normal;
+  line-height:1.3;
+}
 button.primary{
   font-family:var(--sans);
   font-weight:700;
@@ -705,6 +721,21 @@ button.primary:active{transform:translateY(1px);}
 }
 .rank-select-inline:hover{filter:brightness(1.1);}
 .rank-select-inline:focus{outline:2px solid var(--ember); outline-offset:1px;}
+.rank-select-inline-wrap{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+}
+.rank-select-inline-wrap .rank-select-inline{
+  padding-right:24px;
+}
+.rank-select-inline-caret{
+  position:absolute;
+  right:8px;
+  font-size:10px;
+  color:var(--ember);
+  pointer-events:none;
+}
 
 .solver-btn-row{
   display:flex;
@@ -1088,7 +1119,10 @@ footer{
   .slot-row{grid-template-columns:40px 1fr;grid-template-rows:auto auto;}
   .slot-score{grid-column:2; text-align:left;}
   .result-toggle-main{flex-direction:column; align-items:flex-start;}
-  .target-row{flex-direction:column; align-items:stretch;}
+  .target-row{grid-template-columns:1fr;}
+  .rank-sequential-row{grid-template-columns:1fr;}
+  .rank-sequential-col{grid-column:1;}
+  .diff-sequential-btn{grid-column:1; width:100%;}
   .custom-option{width:34px; height:34px;}
   .custom-option .color-swatch{width:16px; height:16px;}
   .grid-shape-head, .grid-color-head{font-size:10px;}
@@ -1140,35 +1174,28 @@ footer{
           <span class="diff-value" id="diff-value">0</span>
         </div>
       </div>
-    </div>
 
-    <div class="card">
-      <h2 class="card-title">鍛冶ランク <span class="tag">RANK</span></h2>
-      <p class="card-desc">同色・同形ボーナスの加算値は鍛冶ランクで決まります。現在スコアの入力を確定すると自動セットされます（手動変更も可）。</p>
-      <button type="button" class="collapsible-toggle" data-target="rank-desc-detail-body" style="margin-bottom:12px;">
-        <span style="flex:1; text-align:left; font-size:13px; color:var(--steel-300); font-family:var(--mono);">詳細</span>
-        <span class="collapsible-icon">+</span>
-      </button>
-      <div class="collapsible-body" id="rank-desc-detail-body">
-        <p class="card-desc">上の「現在の鍛冶スコア」を入力欄から離れる（編集を終える）と自動でセットされます（49以下→4級／50〜149→3級／150以上→2級）。手動で選び直すこともできます。なお150以上は1級・2級どちらもあり得るため、既に1級を選んでいる場合は自動セットで2級に戻しません（150未満に変更した場合は自動判定に戻ります）。</p>
-      </div>
-      <div class="rank-row">
-        <div>
-          <label class="field-label">現在の鍛冶ランク</label>
-          <select id="rank-select">
-            <option value="4">4級（ボーナス +1）</option>
-            <option value="3">3級（ボーナス +2）</option>
-            <option value="2">2級（ボーナス +3）</option>
-            <option value="1">1級（ボーナス +4）</option>
-          </select>
+      <div class="rank-sequential-row">
+        <div class="rank-sequential-col">
+          <div class="rank-row">
+            <div>
+              <label class="field-label">現在の鍛冶ランク</label>
+              <select id="rank-select">
+                <option value="4">4級（ボーナス +1）</option>
+                <option value="3">3級（ボーナス +2）</option>
+                <option value="2">2級（ボーナス +3）</option>
+                <option value="1">1級（ボーナス +4）</option>
+              </select>
+            </div>
+          </div>
         </div>
+        <button type="button" class="primary diff-sequential-btn" id="sequential-register-btn-diff">連続でレシピを登録</button>
       </div>
     </div>
 
     <div class="card">
       <h2 class="card-title">アクティブスロット <span class="tag">ACTIVE × 3</span></h2>
       <p class="card-desc">1枠目（最上段）は最終スコアが <strong>2倍</strong> になります。カカシは隣接する枠のスコアを参照します。</p>
-      <button type="button" class="primary secondary" id="sequential-register-btn" style="margin-bottom:14px;">連続で登録（アクティブ→ストックを順番に設定）</button>
 
       <div class="slot-stack" id="active-slots"></div>
     </div>
@@ -1220,12 +1247,15 @@ footer{
       </div>
       <div class="solver-rank-note" id="solver-rank-note">
         現在の鍛冶ランク：
-        <select id="rank-select-solver" class="rank-select-inline">
-          <option value="4">4級（ボーナス +1）</option>
-          <option value="3">3級（ボーナス +2）</option>
-          <option value="2">2級（ボーナス +3）</option>
-          <option value="1">1級（ボーナス +4）</option>
-        </select>
+        <span class="rank-select-inline-wrap">
+          <select id="rank-select-solver" class="rank-select-inline">
+            <option value="4">4級（ボーナス +1）</option>
+            <option value="3">3級（ボーナス +2）</option>
+            <option value="2">2級（ボーナス +3）</option>
+            <option value="1">1級（ボーナス +4）</option>
+          </select>
+          <span class="rank-select-inline-caret" aria-hidden="true">▾</span>
+        </span>
         （探索にはこのランクのボーナスが使われます）
       </div>
       <div class="solver-btn-row">
@@ -1378,6 +1408,8 @@ footer{
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-07-17</strong>　「手持ちレシピでスコアを探す」の一覧で、どのストック番号と交換したかが違うだけでアクティブ3枠の色・形・完成状態が全く同一になる候補が別々の件として重複表示されていた不具合を修正。表示上の重複排除キー（`comboDedupeKey`）から交換元のストック番号情報を外し、見た目が完全一致する候補は1件にまとめて表示し、件数「○○通り」からも重複分を除外するようにした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-07-17</strong>　全体的なバグ・仕様乖離の点検を実施。ロジック本体（`calcScore`／`computeStockAfterExchange`／`isValidFinalAssignment`等）には問題は見つからなかったが、タブ2の説明文2箇所が実装と乖離していたため修正：①「スロット構造」に残っていた「アクティブスロットは常に3枠とも使用中のため空き設定はありません」という古い記述（「未選択です」機能導入前の説明のまま）を削除し、未選択時の挙動の説明に置き換え。②「完成させない（スコア化しない）選択」が、あたかもアクティブスロットに直接トグルがあるかのように読める記述だったため、「これはゲーム側のルールの説明であり、このツール自体には手動切替ボタンは無く、ソルバーの組み合わせ探索の中だけで使われる」旨を明記。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-07-18</strong>　「ターン終了後」プレビューで、未完成のまま残留する枠が「元の枠番号から1つ上」に固定でしか繰り上がらず、間に完成（消滅）した枠が複数あっても一番上まで詰められない不具合を修正。例：1・2枠目が完成、3枠目が未完成で残留、かつそのターンで111達成 → 修正前は「金カカシ／黄チャーム／ランダム補充」（3枠目の残留アイテムが2枠目までしか上がらない）と誤表示していたが、正しくは残留アイテムが一番上まで詰められ「黄チャーム／金カカシ／ランダム補充」となる。残留枠の算出を「元の順序を保ったまま上から順に空きを埋める」方式に変更（`renderNextStateHTML`内）。jsdomで複数パターンの回帰テストを実施し、修正後の挙動を確認済み。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-07-25</strong>　「目標までの差分」カードの差分表示の横に「連続で登録」ボタンを追加した（`sequential-register-btn-diff`）上で、続けて「鍛冶ランク」カードを独立カードとして置くのをやめ、この「目標までの差分」カードに統合。統合時、鍛冶ランクカードの常時表示の要約説明文（「同色・同形ボーナスの加算値は鍛冶ランクで決まります。現在スコアの入力を確定すると自動セットされます（手動変更も可）。」）は省略し、詳細ボタン（文言を「詳細」から「鍛冶ランクの詳細」に変更）と選択欄のみ残した。カード間が近づいたことに伴い、アクティブスロットカード側にあった元の「連続で登録」ボタン（`sequential-register-btn`）は重複のため削除し、`sequential-register-btn-diff`に一本化した（呼び出す処理は`openSequentialRegistration()`のまま変更なし）。さらに、ボタン文言を「連続で登録（アクティブ→ストックを順番に設定）」から「連続でレシピを登録」に短縮し、ボタンの配置も差分の枠（`.diff-block`）の中から、その下の鍛冶ランク行と横並びの位置（`.rank-sequential-row`）に移動した。同日中にさらに3点変更：①ボタンの見た目を灰色（`.secondary`）からオレンジ（`.primary`のみ）に変更し目立たせた。②「目標までの差分」の`.target-row`と鍛冶ランク行`.rank-sequential-row`を同じ列構成のCSS Gridに揃え、ボタンを2列目（＝目標到達スコアの真下）に配置し直した（旧配置は行の右端）。③「鍛冶ランクの詳細」トグルボタンとその折りたたみ本文（`#rank-desc-detail-body`）を完全に削除し、現在の鍛冶ランク選択欄のみを残した。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-07-25</strong>　「手持ちレシピでスコアを探す」カード内の鍛冶ランク表示（`#rank-select-solver`）に、ドロップダウンとして操作できることが分かりやすいよう、右端にキャレットアイコン「▾」（`.rank-select-inline-caret`）を追加した。グローバルCSSで`select{appearance:none;}`にしているためブラウザ標準の矢印が出ず、見た目上「選べる」ことが分かりにくかったための改善で、機能面の変更はない（クリックすれば従来通り選択できていた）。</li>
         </ul>
       </div>
     </div>
@@ -2637,7 +2669,7 @@ function advanceSequentialRegistration(){
   }
 }
 
-document.getElementById('sequential-register-btn').addEventListener('click', openSequentialRegistration);
+document.getElementById('sequential-register-btn-diff').addEventListener('click', openSequentialRegistration);
 document.getElementById('sequential-modal-close').addEventListener('click', ()=> closeSequentialRegistration(false));
 sequentialOverlay.addEventListener('click', (e)=>{
   if(e.target === sequentialOverlay) closeSequentialRegistration(false);
