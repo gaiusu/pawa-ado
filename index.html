@@ -1281,6 +1281,7 @@ footer{
 .setup-rank-question{font-size:13px; color:var(--steel-100); margin:0 0 10px;}
 .setup-rank-choices,.setup-rank-adjust{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
 .setup-rank-choice,.setup-rank-adjust-btn{font-family:var(--sans); font-weight:700; color:var(--steel-100); background:var(--steel-900); border:1px solid var(--steel-600); border-radius:var(--radius); padding:11px 10px; cursor:pointer;}
+.setup-rank-adjust-btn .shortcut-key{margin-left:6px; color:var(--gold);}
 .setup-rank-choice.selected{color:var(--steel-900); background:var(--gold); border-color:#efd879;}
 .setup-rank-display{text-align:center; margin:14px 0 10px; padding:12px; background:var(--steel-900); border:1px solid var(--steel-700); border-radius:var(--radius); font-family:var(--serif); font-size:24px; font-weight:700; color:var(--gold);}
 .setup-rank-adjust-btn:disabled{opacity:.35; cursor:not-allowed;}
@@ -1580,6 +1581,7 @@ footer{
       <h2 class="card-title">更新履歴</h2>
       <div class="note-block" id="changelog-block">
         <ul style="list-style:none; margin:0; padding:0;">
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　一括登録の現在ランク確認で、＋キー（テンキーを含む）によるランクアップと－キー（テンキーを含む）によるランクダウンに対応。操作ボタンにもショートカットを明記した。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　一括登録の現在スコア画面を開いた直後、入力済みの数値全体を選択状態にするよう改善。目標スコア画面と同様に、マウスでカーソル位置を合わせたり既存値を削除したりせず、そのまま数字キーを入力して値全体を置き換えられる。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　一括登録の現在ランク確認を改善。150点以上で画面本体のランクが前回手動確定した1級なら、二択画面でも1級を初期選択として引き継ぎ、OKへ自動フォーカスしてEnterだけで1級のまま進めるようにした。前回が1級でない場合は2級を初期選択する。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-07</strong>　金色のレシピ形状アイコンに、時間差で明滅する2つの小さな四方光と光彩を追加して他色との差を強調。動きを抑えるOS設定では明滅を停止する。チャームは吊り輪・接続部・飾りを左へ傾け、正面向きの指輪と輪郭が重ならないよう調整した。</li>
@@ -3261,8 +3263,8 @@ function renderFullSetupStep(){
     ${choiceHtml}
     <div class="setup-rank-display" id="full-setup-rank-display" aria-live="polite">${setupRankLabel(fullSetupState.rank)}</div>
     <div class="setup-rank-adjust">
-      <button type="button" class="setup-rank-adjust-btn" id="full-setup-rank-up">ランクを上げる</button>
-      <button type="button" class="setup-rank-adjust-btn" id="full-setup-rank-down">ランクを下げる</button>
+      <button type="button" class="setup-rank-adjust-btn" id="full-setup-rank-up" aria-label="ランクを上げる。プラスキーでも操作できます" aria-keyshortcuts="+">ランクを上げる <kbd class="shortcut-key">＋</kbd></button>
+      <button type="button" class="setup-rank-adjust-btn" id="full-setup-rank-down" aria-label="ランクを下げる。マイナスキーでも操作できます" aria-keyshortcuts="-">ランクを下げる <kbd class="shortcut-key">－</kbd></button>
     </div>
     <p class="setup-error" id="full-setup-error" aria-live="polite"></p>`;
 
@@ -3374,6 +3376,14 @@ fullSetupOverlay.addEventListener('keydown', (e)=>{
   if(e.key === 'Escape'){
     e.preventDefault();
     closeFullSetupRegistration(true);
+  } else if(fullSetupState.step === 2 && !e.ctrlKey && !e.metaKey && !e.altKey && !e.isComposing && !e.repeat && (e.key === '+' || e.code === 'NumpadAdd')){
+    e.preventDefault();
+    const button = document.getElementById('full-setup-rank-up');
+    if(button && !button.disabled) button.click();
+  } else if(fullSetupState.step === 2 && !e.ctrlKey && !e.metaKey && !e.altKey && !e.isComposing && !e.repeat && (e.key === '-' || e.code === 'NumpadSubtract')){
+    e.preventDefault();
+    const button = document.getElementById('full-setup-rank-down');
+    if(button && !button.disabled) button.click();
   } else if(e.key === 'Enter' && !e.target.closest('.setup-rank-choice, .setup-rank-adjust-btn, #full-setup-goal-plus11')){
     e.preventDefault();
     confirmFullSetupStep();
