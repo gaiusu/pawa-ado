@@ -1579,6 +1579,7 @@ footer{
       <h2 class="card-title">更新履歴</h2>
       <div class="note-block" id="changelog-block">
         <ul style="list-style:none; margin:0; padding:0;">
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　どちらの連続登録から開始した場合も、全9枠の登録完了またはストックの「空き（選択を終了する）」による正常終了後、自動的に「上の差分スコアを手持ちで探す」を実行するよう改善。×・Esc・背景クリックによる途中終了時は自動検索しない。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　一括登録の現在ランク確認を簡略化。「ランクを上げる／下げる」ボタンを撤去し、1級・2級の二択画面で「1級（1キー）」「2級（2キー）」を表示。数字キーで選択してEnterで確定できるようにした。3級・4級など自動判定時はEnterだけで進む。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　一括登録の現在スコア画面を開いた直後、入力済みの数値全体を選択状態にするよう改善。目標スコア画面と同様に、マウスでカーソル位置を合わせたり既存値を削除したりせず、そのまま数字キーを入力して値全体を置き換えられる。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　一括登録の現在ランク確認を改善。150点以上で画面本体のランクが前回手動確定した1級なら、二択画面でも1級を初期選択として引き継ぎ、OKへ自動フォーカスしてEnterだけで1級のまま進めるようにした。前回が1級でない場合は2級を初期選択する。</li>
@@ -3434,11 +3435,14 @@ function closeSequentialRegistration(completed){
   sequentialOverlay.classList.remove('open');
   sequentialOverlay.setAttribute('aria-hidden', 'true');
   // 全枠回答し終えた／ストックで「空き(選択を終了する)」を選んで終了した場合のみ、
-  // 続けて使うであろう「手持ちレシピでスコアを探す」欄までスクロールする
-  // （×ボタンや背景クリックでの途中キャンセル時はスクロールしない）
+  // 「手持ちレシピでスコアを探す」欄へ移動し、上の差分スコア検索を自動実行する。
+  // （×ボタン・Esc・背景クリックでの途中キャンセル時は検索しない）
   if(completed){
-    document.getElementById('solver-card').scrollIntoView({behavior:'smooth', block:'start'});
-    document.getElementById('target-search-btn').focus();
+    const solverCard = document.getElementById('solver-card');
+    const targetSearchButton = document.getElementById('target-search-btn');
+    solverCard.scrollIntoView({behavior:'smooth', block:'start'});
+    targetSearchButton.click();
+    targetSearchButton.focus({preventScroll:true});
   } else if(sequentialReturnFocus && typeof sequentialReturnFocus.focus === 'function'){
     sequentialReturnFocus.focus();
   }
