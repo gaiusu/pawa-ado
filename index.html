@@ -1434,7 +1434,7 @@ footer{
         <span class="collapsible-icon">+</span>
       </button>
       <div class="collapsible-body" id="solver-desc-detail-body">
-        <p class="card-desc">このページのアクティブ3枚＋ストック（空きでない枚）から、<strong>交換ルール</strong>（連鎖交換含む）と<strong>完成／未完成の選択</strong>を組み合わせて何が実現できるか探します。各アクティブ枠は「そのまま」か「同色・同形のストック1枚に交換」のいずれかです。1ターンで目標差分を作れない場合は、交換だけを行ってデート（休む・遊ぶ）を挟み、次のターンに達成する経路も案内します。</p>
+        <p class="card-desc">このページのアクティブ3枚＋ストック（空きでない枚）から、<strong>交換ルール</strong>（連鎖交換含む）と<strong>完成／未完成の選択</strong>を組み合わせて何が実現できるか探します。各アクティブ枠は「そのまま」か「同色・同形のストック1枚に交換」のいずれかです。1ターンで目標差分を作れる場合も作れない場合も、交換だけを行ってデート（休む・遊ぶ）を挟み、次のターンに達成する経路があれば案内します。</p>
       </div>
       <div class="solver-rank-note" id="solver-rank-note">
         現在の鍛冶ランク：
@@ -1579,6 +1579,7 @@ footer{
       <h2 class="card-title">更新履歴</h2>
       <div class="note-block" id="changelog-block">
         <ul style="list-style:none; margin:0; padding:0;">
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　1ターンで差分を達成できる組み合わせが見つかった場合も、交換だけを行ってデート（休む・遊ぶ）を挟み、次のターンに目標達成できる経路を併せて表示するよう変更。入力エラー・未選択・差分0の場合を除き、1ターン候補の有無に関係なく探索する。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　どちらの連続登録から開始した場合も、全9枠の登録完了またはストックの「空き（選択を終了する）」による正常終了後、自動的に「上の差分スコアを手持ちで探す」を実行するよう改善。×・Esc・背景クリックによる途中終了時は自動検索しない。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　一括登録の現在ランク確認を簡略化。「ランクを上げる／下げる」ボタンを撤去し、1級・2級の二択画面で「1級（1キー）」「2級（2キー）」を表示。数字キーで選択してEnterで確定できるようにした。3級・4級など自動判定時はEnterだけで進む。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　一括登録の現在スコア画面を開いた直後、入力済みの数値全体を選択状態にするよう改善。目標スコア画面と同様に、マウスでカーソル位置を合わせたり既存値を削除したりせず、そのまま数字キーを入力して値全体を置き換えられる。</li>
@@ -3022,9 +3023,10 @@ document.getElementById('target-search-btn').addEventListener('click', ()=>{
   const hundredHtml = buildHundredMultipleHtml(allCombos, diff, currentScore, stockSlots);
   const guaranteedGoldHtml = buildGuaranteedGoldHtml(allCombos, diff, currentScore, stockSlots);
   const alternativeTargetHtml = hundredHtml + guaranteedGoldHtml;
+  // 1ターンで達成できるかどうかに関係なく、交換だけの準備ターンを挟む案も探索する。
+  const twoTurnHtml = buildTwoTurnPlanHtml(activeSlots, stockSlots, rank, diff);
 
   if(found.length === 0){
-    const twoTurnHtml = buildTwoTurnPlanHtml(activeSlots, stockSlots, rank, diff);
     resultDiv.innerHTML = `<div class="target-status notfound">手持ちのアクティブ3枚・ストック（空きを除く）の組み合わせでは、差分 ${diff} 点を作れる構成が見つかりませんでした。ストックの内容や鍛冶ランクをご確認ください。</div>` + twoTurnHtml + alternativeTargetHtml;
     attachTwoTurnPlanToggle();
     attachHundredRowToggle();
@@ -3035,7 +3037,8 @@ document.getElementById('target-search-btn').addEventListener('click', ()=>{
   const MAX_SHOW = 150;
   const {html: comboHtml, uniqueCount} = renderComboList(found, MAX_SHOW, currentScore, stockSlots);
   const statusHtml = `<div class="target-status found">差分 ${diff} 点を、手持ちレシピだけで作れる構成が ${uniqueCount} 通り見つかりました${uniqueCount>MAX_SHOW ? `（上位 ${MAX_SHOW} 件を表示）` : ''}。</div>`;
-  resultDiv.innerHTML = statusHtml + comboHtml + alternativeTargetHtml;
+  resultDiv.innerHTML = statusHtml + comboHtml + twoTurnHtml + alternativeTargetHtml;
+  attachTwoTurnPlanToggle();
   attachHundredRowToggle();
   attachGuaranteedGoldRowToggle();
 });
