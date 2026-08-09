@@ -269,6 +269,31 @@ h1 .sub{
   line-height:1.35;
   text-align:center;
 }
+.grid-shortcut-hint{
+  grid-column:1/-1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:3px 5px;
+  margin-top:4px;
+  padding:7px 4px 1px;
+  border-top:1px solid var(--steel-700);
+  color:var(--steel-400);
+  font-family:var(--mono);
+  font-size:9.5px;
+  line-height:1.45;
+}
+.grid-shortcut-key{
+  padding:0 4px;
+  border:1px solid var(--steel-600);
+  border-bottom-width:2px;
+  border-radius:3px;
+  background:var(--steel-900);
+  color:var(--steel-200);
+  font-family:var(--mono);
+  font-size:9px;
+}
 .card-desc{
   font-size:13px;
   color:var(--steel-300);
@@ -479,6 +504,7 @@ select.color-金{border-left:3px solid var(--c-gold);}
 }
 .custom-option:hover{background:var(--steel-700);}
 .custom-option.selected{background:rgba(217,118,59,.16); border-color:var(--ember);}
+.custom-option:focus-visible{outline:2px solid var(--gold); outline-offset:1px;}
 .custom-option-label{display:none;}
 
 /* 参考画像の構図だけを手掛かりにした、装飾を抑えた独自のCSS形状アイコン */
@@ -1316,6 +1342,9 @@ footer{
   .custom-option .color-swatch{width:14px; height:14px;}
   .custom-select-list{padding:6px;}
 }
+@media (hover:none), (pointer:coarse){
+  .desktop-keyboard-only{display:none !important;}
+}
 </style>
 </head>
 <body>
@@ -1344,7 +1373,7 @@ footer{
         <h2 class="card-title">目標までの差分 <span class="tag">DIFF</span></h2>
         <div class="full-sequential-action">
           <button type="button" class="full-sequential-btn" id="full-sequential-register-btn" aria-keyshortcuts="S">スコア・ランク・レシピを連続登録</button>
-          <span class="full-sequential-shortcut">どこからでも開始 <kbd class="shortcut-key">S</kbd></span>
+          <span class="full-sequential-shortcut desktop-keyboard-only">どこからでも開始 <kbd class="shortcut-key">S</kbd></span>
         </div>
       </div>
       <p class="card-desc">金色のボタンから、現在スコア・目標スコア・ランク・手持ちレシピを順番にまとめて登録できます。個別に修正したい場合は、下の入力欄もそのまま使えます。</p>
@@ -1579,6 +1608,7 @@ footer{
       <h2 class="card-title">更新履歴</h2>
       <div class="note-block" id="changelog-block">
         <ul style="list-style:none; margin:0; padding:0;">
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-09</strong>　レシピ選択グリッドをWASD／矢印キーで上下左右に移動し、Enterで選択できるよう改善。連続登録のストック選択中はTキーで「空き（選択を終了する）」を即時選択できる。グリッド下部に小さな操作案内を追加し、スマホ・タブレットなどタッチ操作端末ではS・WASD・矢印・Enter・Esc・T・1・2キーを含むキーボード注釈を非表示にした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-09</strong>　差分検索・達成可能スコア・次ターンの達成方法を含む全レシピ結果の表示順を「すべて完成→1枠目が未完成→2枠目が未完成→3枠目が未完成」に統一。複数枠が未完成の候補はこの4分類の後に表示する。準備案の「次のターンの達成方法」は初期状態から展開し、クリックで閉じられるようにした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　1ターンで差分を達成できる組み合わせが見つかった場合も、交換だけを行ってデート（休む・遊ぶ）を挟み、次のターンに目標達成できる経路を併せて表示するよう変更。入力エラー・未選択・差分0の場合を除き、1ターン候補の有無に関係なく探索する。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　どちらの連続登録から開始した場合も、全9枠の登録完了またはストックの「空き（選択を終了する）」による正常終了後、自動的に「上の差分スコアを手持ちで探す」を実行するよう改善。×・Esc・背景クリックによる途中終了時は自動検索しない。</li>
@@ -1632,13 +1662,13 @@ footer{
   <div class="sequential-modal setup-modal" role="dialog" aria-modal="true" aria-labelledby="full-setup-modal-question" tabindex="-1">
     <div class="sequential-modal-head">
       <span class="sequential-modal-progress" id="full-setup-modal-progress">入力 1 / 3</span>
-      <button type="button" class="sequential-modal-close" id="full-setup-modal-close" aria-label="一括登録を中止。Escキーでも閉じられます" aria-keyshortcuts="Escape">✕ <kbd class="shortcut-key">Esc</kbd></button>
+      <button type="button" class="sequential-modal-close" id="full-setup-modal-close" aria-label="一括登録を中止。Escキーでも閉じられます" aria-keyshortcuts="Escape">✕ <kbd class="shortcut-key desktop-keyboard-only">Esc</kbd></button>
     </div>
     <p class="sequential-modal-question" id="full-setup-modal-question">現在の鍛冶スコアを入力してください</p>
     <div id="full-setup-modal-body"></div>
     <div class="setup-actions">
       <button type="button" class="setup-back-btn" id="full-setup-back-btn">戻る</button>
-      <button type="button" class="setup-ok-btn" id="full-setup-ok-btn" aria-keyshortcuts="Enter">OK（Enter）</button>
+      <button type="button" class="setup-ok-btn" id="full-setup-ok-btn" aria-keyshortcuts="Enter">OK<span class="desktop-keyboard-only">（Enter）</span></button>
     </div>
   </div>
 </div>
@@ -1647,7 +1677,7 @@ footer{
   <div class="sequential-modal" role="dialog" aria-modal="true" aria-labelledby="sequential-modal-question" tabindex="-1">
     <div class="sequential-modal-head">
       <span class="sequential-modal-progress" id="sequential-modal-progress">1 / 9</span>
-      <button type="button" class="sequential-modal-close" id="sequential-modal-close" aria-label="連続登録を中止。Escキーでも閉じられます" aria-keyshortcuts="Escape">✕ <kbd class="shortcut-key">Esc</kbd></button>
+      <button type="button" class="sequential-modal-close" id="sequential-modal-close" aria-label="連続登録を中止。Escキーでも閉じられます" aria-keyshortcuts="Escape">✕ <kbd class="shortcut-key desktop-keyboard-only">Esc</kbd></button>
     </div>
     <p class="sequential-modal-question" id="sequential-modal-question">アクティブスロット1枠目を何にしますか？</p>
     <ul class="custom-select-list custom-option-grid sequential-modal-grid" id="sequential-modal-grid" role="listbox"></ul>
@@ -1741,6 +1771,54 @@ function recipeGridCellsHTML(selectedKey, includeEmpty, emptyLabel){
   return gridCellsHTML;
 }
 
+// レシピグリッド下部に表示する、デスクトップ向けの簡潔な操作案内。
+// 連続登録のストックステップだけはTキーによる早期終了も案内する。
+function recipeGridShortcutHintHTML(showStockFinishShortcut){
+  const finishHint = showStockFinishShortcut
+    ? `<span>終了 <kbd class="grid-shortcut-key">T</kbd></span>`
+    : '';
+  return `
+    <li class="grid-shortcut-hint desktop-keyboard-only" role="presentation">
+      <span>移動 <kbd class="grid-shortcut-key">WASD</kbd> / <kbd class="grid-shortcut-key">↑←↓→</kbd></span>
+      <span>決定 <kbd class="grid-shortcut-key">Enter</kbd></span>
+      ${finishHint}
+    </li>`;
+}
+
+// 5列×5行のレシピ部分を、画面上の上下左右どおりに移動する。
+// 最下段から下へ移動した場合は、存在すれば「空き／未選択」の行へ移る。
+function moveRecipeGridFocus(option, direction){
+  const list = option.closest('.custom-select-list');
+  if(!list) return;
+  const recipeOptions = Array.from(list.querySelectorAll('.custom-option:not(.custom-option-empty)'));
+  const emptyOption = list.querySelector('.custom-option-empty');
+  if(option.classList.contains('custom-option-empty')){
+    if(direction === 'up'){
+      const rememberedCol = Math.min(4, Math.max(0, Number(list.dataset.lastGridColumn) || 0));
+      recipeOptions[Math.max(0, recipeOptions.length - 5) + rememberedCol]?.focus();
+    }
+    return;
+  }
+
+  const current = recipeOptions.indexOf(option);
+  if(current < 0) return;
+  const row = Math.floor(current / 5);
+  const col = current % 5;
+  let next = current;
+  if(direction === 'left' && col > 0) next = current - 1;
+  if(direction === 'right' && col < 4) next = current + 1;
+  if(direction === 'up' && row > 0) next = current - 5;
+  if(direction === 'down'){
+    if(row < 4) next = current + 5;
+    else if(emptyOption){
+      list.dataset.lastGridColumn = String(col);
+      emptyOption.focus();
+      return;
+    }
+  }
+  recipeOptions[next]?.focus();
+}
+
 // カスタムドロップダウンのHTML文字列を生成する。
 // 本物の<select>は隠して値の保持・既存ロジックとの連携に使い、見た目はこのカスタムUIで表示する。
 // 見た目はグリッド形式：横列=形（カカシ/指輪/チャーム/腕輪/首飾り）、縦列=色（赤/青/黄/緑/金）。
@@ -1774,6 +1852,7 @@ function customRecipeDropdownHTML(selectClass, dataIdx, selectedKey, includeEmpt
       </button>
       <ul class="custom-select-list custom-option-grid" id="${listId}" role="listbox" aria-hidden="true">
         ${gridCellsHTML}
+        ${recipeGridShortcutHintHTML(false)}
       </ul>
     </div>`;
 }
@@ -1822,6 +1901,10 @@ function initCustomDropdowns(){
       if(willOpen){
         setCustomDropdownOpen(wrap, true);
         positionDropdownList(wrap);
+        requestAnimationFrame(()=>{
+          const list = wrap.querySelector('.custom-select-list');
+          (list.querySelector('.custom-option.selected') || list.querySelector('.custom-option'))?.focus();
+        });
       }
       return;
     }
@@ -1847,13 +1930,16 @@ function initCustomDropdowns(){
   document.addEventListener('keydown', (e)=>{
     const option = e.target.closest('.custom-option');
     if(option){
-      const list = option.closest('.custom-select-list');
-      const options = Array.from(list.querySelectorAll('.custom-option'));
-      const current = options.indexOf(option);
-      if(['ArrowRight','ArrowDown','ArrowLeft','ArrowUp'].includes(e.key)){
+      const key = e.key.toLowerCase();
+      const direction = {
+        arrowleft:'left', a:'left',
+        arrowright:'right', d:'right',
+        arrowup:'up', w:'up',
+        arrowdown:'down', s:'down',
+      }[key];
+      if(direction && !e.ctrlKey && !e.metaKey && !e.altKey && !e.isComposing){
         e.preventDefault();
-        const delta = (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : -1;
-        options[(current + delta + options.length) % options.length]?.focus();
+        moveRecipeGridFocus(option, direction);
       } else if(e.key === 'Enter' || e.key === ' '){
         e.preventDefault();
         option.click();
@@ -3270,8 +3356,8 @@ function renderFullSetupStep(){
   const choiceHtml = fullSetupState.rankAmbiguous ? `
     <p class="setup-rank-question">前回の選択を初期表示しています。現在のランクと異なる場合だけ変更してください。</p>
     <div class="setup-rank-choices">
-      <button type="button" class="setup-rank-choice${fullSetupState.rank==='1'?' selected':''}" data-rank="1" aria-label="1級。1キーでも選択できます" aria-keyshortcuts="1">1級（<kbd class="shortcut-key">1キー</kbd>）</button>
-      <button type="button" class="setup-rank-choice${fullSetupState.rank==='2'?' selected':''}" data-rank="2" aria-label="2級。2キーでも選択できます" aria-keyshortcuts="2">2級（<kbd class="shortcut-key">2キー</kbd>）</button>
+      <button type="button" class="setup-rank-choice${fullSetupState.rank==='1'?' selected':''}" data-rank="1" aria-label="1級。1キーでも選択できます" aria-keyshortcuts="1">1級<span class="desktop-keyboard-only">（<kbd class="shortcut-key">1キー</kbd>）</span></button>
+      <button type="button" class="setup-rank-choice${fullSetupState.rank==='2'?' selected':''}" data-rank="2" aria-label="2級。2キーでも選択できます" aria-keyshortcuts="2">2級<span class="desktop-keyboard-only">（<kbd class="shortcut-key">2キー</kbd>）</span></button>
     </div>` : '<p class="setup-rank-question">現在スコアから既存ルールに基づくランクを自動設定しています。</p>';
   fullSetupBodyEl.innerHTML = `
     ${choiceHtml}
@@ -3385,6 +3471,8 @@ fullSetupOverlay.addEventListener('keydown', (e)=>{
 // モーダル表示中・修飾キー使用中・IME変換中・キー長押し中は誤起動を防ぐ。
 document.addEventListener('keydown', (e)=>{
   if(e.key.toLowerCase() !== 's' || e.ctrlKey || e.metaKey || e.altKey || e.isComposing || e.repeat) return;
+  // レシピグリッド内ではSを「下へ移動」として使うため、一括登録の起動を優先しない。
+  if(e.target.closest('.custom-option')) return;
   if(fullSetupState.open || sequentialState.open) return;
   e.preventDefault();
   openFullSetupRegistration();
@@ -3429,7 +3517,11 @@ function renderSequentialStep(){
 
   sequentialProgressEl.textContent = `${sequentialState.stepIndex + 1} / ${SEQUENTIAL_STEPS.length}`;
   sequentialQuestionEl.textContent = `${step.label}を何にしますか？`;
-  sequentialGridEl.innerHTML = recipeGridCellsHTML(currentKey, true, emptyLabel);
+  sequentialGridEl.innerHTML = recipeGridCellsHTML(currentKey, true, emptyLabel)
+    + recipeGridShortcutHintHTML(step.type === 'stock');
+  if(step.type === 'stock'){
+    sequentialGridEl.querySelector('.custom-option-empty')?.setAttribute('aria-keyshortcuts', 'T');
+  }
   requestAnimationFrame(()=>{
     const selected = sequentialGridEl.querySelector('.custom-option.selected');
     (selected || sequentialGridEl.querySelector('.custom-option'))?.focus();
@@ -3482,6 +3574,12 @@ document.addEventListener('keydown', (e)=>{
   if(e.key === 'Escape' && sequentialState.open){
     e.preventDefault();
     closeSequentialRegistration(false);
+    return;
+  }
+  const step = currentSequentialStep();
+  if(sequentialState.open && step?.type === 'stock' && e.key.toLowerCase() === 't' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.isComposing && !e.repeat){
+    e.preventDefault();
+    sequentialGridEl.querySelector('.custom-option-empty')?.click();
   }
 });
 
