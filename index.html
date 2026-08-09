@@ -1579,6 +1579,7 @@ footer{
       <h2 class="card-title">更新履歴</h2>
       <div class="note-block" id="changelog-block">
         <ul style="list-style:none; margin:0; padding:0;">
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-09</strong>　差分検索・達成可能スコア・次ターンの達成方法を含む全レシピ結果の表示順を「すべて完成→1枠目が未完成→2枠目が未完成→3枠目が未完成」に統一。複数枠が未完成の候補はこの4分類の後に表示する。準備案の「次のターンの達成方法」は初期状態から展開し、クリックで閉じられるようにした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　1ターンで差分を達成できる組み合わせが見つかった場合も、交換だけを行ってデート（休む・遊ぶ）を挟み、次のターンに目標達成できる経路を併せて表示するよう変更。入力エラー・未選択・差分0の場合を除き、1ターン候補の有無に関係なく探索する。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　どちらの連続登録から開始した場合も、全9枠の登録完了またはストックの「空き（選択を終了する）」による正常終了後、自動的に「上の差分スコアを手持ちで探す」を実行するよう改善。×・Esc・背景クリックによる途中終了時は自動検索しない。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　一括登録の現在ランク確認を簡略化。「ランクを上げる／下げる」ボタンを撤去し、1級・2級の二択画面で「1級（1キー）」「2級（2キー）」を表示。数字キーで選択してEnterで確定できるようにした。3級・4級など自動判定時はEnterだけで進む。</li>
@@ -2746,6 +2747,19 @@ function comboDedupeKey(item){
   return item.slots.map(s=>recipeKey(s)+':'+s.completed).join('|');
 }
 
+// コンボ一覧の完成状態による表示優先度。
+// すべて完成 → 1枠目だけ未完成 → 2枠目だけ未完成 → 3枠目だけ未完成を優先し、
+// 複数枠が未完成の候補は情報を失わないよう、その4分類の後ろへ並べる。
+function comboCompletionPriority(item){
+  const unfinished = item.slots
+    .map((slot, idx)=>slot.completed === false ? idx : -1)
+    .filter(idx=>idx >= 0);
+  if(unfinished.length === 0) return 0;
+  if(unfinished.length === 1) return unfinished[0] + 1;
+  const mask = unfinished.reduce((value, idx)=>value | (1 << idx), 0);
+  return 10 + unfinished.length * 8 + mask;
+}
+
 function renderComboList(items, maxShow, currentScore, stockSlots){
   const uniqueMap = new Map();
   items.forEach(item=>{
@@ -2754,9 +2768,7 @@ function renderComboList(items, maxShow, currentScore, stockSlots){
   });
   let unique = [...uniqueMap.values()];
   unique.sort((a,b)=>{
-    const ia = a.slots.filter(s=>s.completed===false).length;
-    const ib = b.slots.filter(s=>s.completed===false).length;
-    return ia - ib;
+    return comboCompletionPriority(a) - comboCompletionPriority(b);
   });
   const shown = unique.slice(0, maxShow);
   // 次ターン状態を表示できるのは currentScore と stockSlots が渡されている時のみ
@@ -2974,8 +2986,8 @@ function buildTwoTurnPlanHtml(activeSlots, stockSlots, rank, diff){
         <ol class="two-turn-steps">${stepsHtml}</ol>
         <div class="two-turn-step-label">交換後、そのまま未完成で維持するアクティブ</div>
         <div class="two-turn-active">${activeHtml}</div>
-        <button type="button" class="two-turn-detail-btn" data-two-turn-idx="${idx}" aria-expanded="false" aria-controls="${detailId}">次のターンの達成方法を見る ▾</button>
-        <div class="two-turn-detail" id="${detailId}">${secondTurnHtml}</div>
+        <button type="button" class="two-turn-detail-btn open" data-two-turn-idx="${idx}" aria-expanded="true" aria-controls="${detailId}">次のターンの達成方法を閉じる ▲</button>
+        <div class="two-turn-detail open" id="${detailId}">${secondTurnHtml}</div>
       </div>`;
   });
   html += '</div>';
