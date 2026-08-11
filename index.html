@@ -992,10 +992,20 @@ button.primary.secondary{
   color:var(--steel-600);
 }
 .score-row-value{
+  min-width:0;
   font-family:var(--serif);
   font-size:22px;
   font-weight:700;
   color:var(--ember);
+}
+.score-row-total{
+  display:inline-block;
+  margin-left:8px;
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:400;
+  color:var(--steel-300);
+  white-space:nowrap;
 }
 .score-row-count{
   font-family:var(--mono);
@@ -1335,6 +1345,7 @@ footer{
   .custom-option{width:34px; height:34px;}
   .custom-option .recipe-shape-icon{transform:scale(.82);}
   .grid-shape-head, .grid-color-head{font-size:10px;}
+  .score-row-total{display:block; margin:2px 0 0; white-space:normal;}
 }
 @media (max-width:380px){
   .stock-grid{grid-template-columns:1fr;}
@@ -1608,6 +1619,7 @@ footer{
       <h2 class="card-title">更新履歴</h2>
       <div class="note-block" id="changelog-block">
         <ul style="list-style:none; margin:0; padding:0;">
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-11</strong>　デートを挟む準備案を、表示上の「次ターン○通り」が多い順に並べるよう変更。同数の場合は従来の探索順を維持する。「今の手持ちで到達できるスコア一覧」では、各獲得スコアの横に「現在スコア＋獲得スコア＝到達後合計」を表示するようにした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-09</strong>　レシピ選択グリッドをWASD／矢印キーで上下左右に移動し、Enterで選択できるよう改善。連続登録のストック選択中はTキーで「空き（選択を終了する）」を即時選択できる。グリッド下部に小さな操作案内を追加し、スマホ・タブレットなどタッチ操作端末ではS・WASD・矢印・Enter・Esc・T・1・2キーを含むキーボード注釈を非表示にした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-09</strong>　差分検索・達成可能スコア・次ターンの達成方法を含む全レシピ結果の表示順を「すべて完成→1枠目が未完成→2枠目が未完成→3枠目が未完成」に統一。複数枠が未完成の候補はこの4分類の後に表示する。準備案の「次のターンの達成方法」は初期状態から展開し、クリックで閉じられるようにした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-08</strong>　1ターンで差分を達成できる組み合わせが見つかった場合も、交換だけを行ってデート（休む・遊ぶ）を挟み、次のターンに目標達成できる経路を併せて表示するよう変更。入力エラー・未選択・差分0の場合を除き、1ターン候補の有無に関係なく探索する。</li>
@@ -3041,11 +3053,15 @@ function buildTwoTurnPlanHtml(activeSlots, stockSlots, rank, diff){
 
     const exchangeSteps = describeFirstTurnExchangeSteps(placement);
     if(exchangeSteps.length === 0) continue;
-    plans.push({nextActive, secondTurnCombos, exchangeSteps});
+    const secondTurnUniqueCount = new Set(secondTurnCombos.map(comboDedupeKey)).size;
+    plans.push({nextActive, secondTurnCombos, secondTurnUniqueCount, exchangeSteps});
     if(plans.length >= MAX_PLANS) break;
   }
 
   if(plans.length === 0) return '';
+  // 画面に表示する重複排除後の「次ターン○通り」が多い準備案から並べる。
+  // Array#sortは安定ソートのため、同数なら従来の探索順を維持する。
+  plans.sort((a,b)=>b.secondTurnUniqueCount - a.secondTurnUniqueCount);
 
   let html = `
     <div class="target-status found two-turn-note">
@@ -3199,11 +3215,12 @@ document.getElementById('achievable-search-btn').addEventListener('click', ()=>{
   scoresDesc.forEach((score, idx)=>{
     const combosForScore = byScore.get(score);
     const {html: comboHtml, uniqueCount} = renderComboList(combosForScore, 150, currentScore, stockSlots);
+    const reachedTotal = currentScore + score;
     html += `
       <div class="score-item">
         <button type="button" class="score-row-btn" data-score-idx="${idx}" aria-expanded="false" aria-controls="score-detail-${idx}">
           <span class="score-row-rank">${idx+1}</span>
-          <span class="score-row-value">${score} 点</span>
+          <span class="score-row-value">${score} 点<span class="score-row-total">（現在 ${currentScore} ＋ ${score} ＝ 合計 ${reachedTotal} 点）</span></span>
           <span class="score-row-count">${uniqueCount} 通り</span>
           <span class="score-row-caret">▾</span>
         </button>
