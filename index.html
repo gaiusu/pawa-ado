@@ -1555,7 +1555,7 @@ footer{
       </div>
       <div class="solver-filter-controls" aria-label="レシピの完成状態と配置先で候補を絞り込む">
         <button type="button" class="solver-filter-btn" id="completed-recipe-filter-btn" aria-expanded="false" aria-controls="solver-recipe-filter-panel">完成させたいレシピで検索</button>
-        <button type="button" class="solver-filter-btn" id="unfinished-recipe-filter-btn" aria-expanded="false" aria-controls="solver-recipe-filter-panel">未完成としたいレシピで検索</button>
+        <button type="button" class="solver-filter-btn" id="unfinished-recipe-filter-btn" aria-expanded="false" aria-controls="solver-recipe-filter-panel">未完成としてアクティブに置いておきたいレシピで検索</button>
         <button type="button" class="solver-filter-btn" id="stock-recipe-filter-btn" aria-expanded="false" aria-controls="solver-recipe-filter-panel">ストックに置いておきたいレシピで検索</button>
       </div>
       <div class="solver-filter-panel" id="solver-recipe-filter-panel" hidden>
@@ -1696,7 +1696,7 @@ footer{
       <h2 class="card-title">更新履歴</h2>
       <div class="note-block" id="changelog-block">
         <ul style="list-style:none; margin:0; padding:0;">
-          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-13</strong>　デートを挟む準備案で、交換後のアクティブ配置とストック内容が同じなら、同一レシピが入っていたストック番号だけ異なる案を実質同一として統合。「完成させたいレシピで検索」「未完成としたいレシピで検索」「ストックに置いておきたいレシピで検索」を追加し、アクティブ／ストックの実物枠を条件として、差分達成候補と到達可能スコア候補を絞り込めるようにした。各条件で複数レシピを選択でき、選択した全レシピを満たす候補を表示する。3条件は併用でき、同じレシピへの矛盾指定は後から確定した条件を優先する。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-13</strong>　デートを挟む準備案で、交換後のアクティブ配置とストック内容が同じなら、同一レシピが入っていたストック番号だけ異なる案を実質同一として統合。「完成させたいレシピで検索」「未完成としてアクティブに置いておきたいレシピで検索」「ストックに置いておきたいレシピで検索」を追加し、アクティブ／ストックの実物枠を条件として、差分達成候補と到達可能スコア候補を絞り込めるようにした。各条件で複数レシピを選択でき、選択した全レシピを満たす候補を表示する。3条件は併用でき、同じレシピへの矛盾指定は後から確定した条件を優先する。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-11</strong>　デートを挟む準備案を、表示上の「次ターン○通り」が多い順に並べるよう変更。同数の場合は従来の探索順を維持する。「今の手持ちで到達できるスコア一覧」では、各獲得スコアの横に「現在スコア＋獲得スコア＝到達後合計」を表示するようにした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-09</strong>　レシピ選択グリッドをWASD／矢印キーで上下左右に移動し、Enterで選択できるよう改善。連続登録のストック選択中はTキーで「空き（選択を終了する）」を即時選択できる。グリッド下部に小さな操作案内を追加し、スマホ・タブレットなどタッチ操作端末ではS・WASD・矢印・Enter・Esc・T・1・2キーを含むキーボード注釈を非表示にした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-09</strong>　差分検索・達成可能スコア・次ターンの達成方法を含む全レシピ結果の表示順を「すべて完成→1枠目が未完成→2枠目が未完成→3枠目が未完成」に統一。複数枠が未完成の候補はこの4分類の後に表示する。準備案の「次のターンの達成方法」は初期状態から展開し、クリックで閉じられるようにした。</li>
@@ -2430,7 +2430,7 @@ function openSolverRecipeFilter(kind){
   solverFilterState.selecting = kind;
   const stateKey = solverFilterStateKey(kind);
   solverFilterDraftIds = new Set(solverFilterState[stateKey]);
-  const conditionLabel = kind === 'completed' ? '完成させたい' : (kind === 'unfinished' ? '未完成にしたい' : 'ストックに置いておきたい');
+  const conditionLabel = kind === 'completed' ? '完成させたい' : (kind === 'unfinished' ? '未完成としてアクティブに置いておきたい' : 'ストックに置いておきたい');
   solverFilterTitle.textContent = `${conditionLabel}手持ちレシピをすべて選択してください`;
   const options = solverHandFilterItems();
   solverFilterOptions.innerHTML = `
