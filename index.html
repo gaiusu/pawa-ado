@@ -948,6 +948,10 @@ button.primary.secondary{
 .solver-filter-option .recipe-shape-icon{flex:0 0 auto; transform:scale(.8);}
 .solver-filter-option-label{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .solver-filter-clear-option{grid-column:1/-1; justify-content:center; color:var(--steel-300); border-style:dashed;}
+.solver-filter-panel-actions{display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid var(--steel-700);}
+.solver-filter-selection-count{margin-right:auto; color:var(--steel-400); font-family:var(--mono); font-size:10px;}
+.solver-filter-apply{padding:8px 14px; border:1px solid var(--ember); border-radius:var(--radius); background:var(--ember); color:#fff; font-family:var(--sans); font-size:12px; font-weight:700; cursor:pointer;}
+.solver-filter-apply:hover{filter:brightness(1.08);}
 .solver-filter-summary{display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:10px; min-height:0;}
 .solver-filter-summary:empty{display:none;}
 .solver-filter-chip{display:inline-flex; align-items:center; gap:5px; padding:4px 8px; border:1px solid var(--ember); border-radius:999px; background:rgba(217,118,59,.1); color:var(--steel-100); font-size:11px;}
@@ -1560,6 +1564,10 @@ footer{
           <button type="button" class="solver-filter-close" id="solver-filter-close" aria-label="検索条件の選択を閉じる">×</button>
         </div>
         <div class="solver-filter-options" id="solver-filter-options"></div>
+        <div class="solver-filter-panel-actions">
+          <span class="solver-filter-selection-count" id="solver-filter-selection-count" aria-live="polite"></span>
+          <button type="button" class="solver-filter-apply" id="solver-filter-apply">選択を完了</button>
+        </div>
       </div>
       <div class="solver-filter-summary" id="solver-filter-summary" aria-live="polite"></div>
       <div class="target-result" id="target-result" aria-live="polite" style="margin-top:20px;"></div>
@@ -1688,7 +1696,7 @@ footer{
       <h2 class="card-title">更新履歴</h2>
       <div class="note-block" id="changelog-block">
         <ul style="list-style:none; margin:0; padding:0;">
-          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-13</strong>　デートを挟む準備案で、交換後のアクティブ配置とストック内容が同じなら、同一レシピが入っていたストック番号だけ異なる案を実質同一として統合。「完成させたいレシピで検索」「未完成としたいレシピで検索」「ストックに置いておきたいレシピで検索」を追加し、アクティブ／ストックの実物枠を条件として、差分達成候補と到達可能スコア候補を絞り込めるようにした。3条件は併用でき、同じレシピへの矛盾指定は後から選んだ条件を優先する。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-13</strong>　デートを挟む準備案で、交換後のアクティブ配置とストック内容が同じなら、同一レシピが入っていたストック番号だけ異なる案を実質同一として統合。「完成させたいレシピで検索」「未完成としたいレシピで検索」「ストックに置いておきたいレシピで検索」を追加し、アクティブ／ストックの実物枠を条件として、差分達成候補と到達可能スコア候補を絞り込めるようにした。各条件で複数レシピを選択でき、選択した全レシピを満たす候補を表示する。3条件は併用でき、同じレシピへの矛盾指定は後から確定した条件を優先する。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-11</strong>　デートを挟む準備案を、表示上の「次ターン○通り」が多い順に並べるよう変更。同数の場合は従来の探索順を維持する。「今の手持ちで到達できるスコア一覧」では、各獲得スコアの横に「現在スコア＋獲得スコア＝到達後合計」を表示するようにした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-09</strong>　レシピ選択グリッドをWASD／矢印キーで上下左右に移動し、Enterで選択できるよう改善。連続登録のストック選択中はTキーで「空き（選択を終了する）」を即時選択できる。グリッド下部に小さな操作案内を追加し、スマホ・タブレットなどタッチ操作端末ではS・WASD・矢印・Enter・Esc・T・1・2キーを含むキーボード注釈を非表示にした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-09</strong>　差分検索・達成可能スコア・次ターンの達成方法を含む全レシピ結果の表示順を「すべて完成→1枠目が未完成→2枠目が未完成→3枠目が未完成」に統一。複数枠が未完成の候補はこの4分類の後に表示する。準備案の「次のターンの達成方法」は初期状態から展開し、クリックで閉じられるようにした。</li>
@@ -2351,10 +2359,11 @@ function readStockSlots(){
 }
 
 /* ============== ソルバー：完成／未完成／ストックに置きたい手持ちレシピで絞り込み ============== */
-const solverFilterState = {completedId:null, unfinishedId:null, keptInStockId:null, selecting:null, lastSearch:'target'};
+const solverFilterState = {completedIds:[], unfinishedIds:[], keptInStockIds:[], selecting:null, lastSearch:'target'};
 const solverFilterPanel = document.getElementById('solver-recipe-filter-panel');
 const solverFilterOptions = document.getElementById('solver-filter-options');
 const solverFilterTitle = document.getElementById('solver-filter-panel-title');
+let solverFilterDraftIds = new Set();
 
 function solverHandFilterItems(){
   const items = [];
@@ -2374,23 +2383,26 @@ function solverFilterItemById(id){
 function renderSolverFilterSummary(){
   const summary = document.getElementById('solver-filter-summary');
   const chips = [];
-  [['completedId','完成'], ['unfinishedId','未完成'], ['keptInStockId','ストックに保持']].forEach(([key,label])=>{
-    const item = solverFilterItemById(solverFilterState[key]);
-    if(!item) return;
-    chips.push(`<span class="solver-filter-chip">${label}：${item.label} ${item.color}${item.shape}<button type="button" data-clear-filter="${key}" aria-label="${label}条件を解除">×</button></span>`);
+  [['completedIds','完成'], ['unfinishedIds','未完成'], ['keptInStockIds','ストックに保持']].forEach(([key,label])=>{
+    solverFilterState[key].forEach(id=>{
+      const item = solverFilterItemById(id);
+      if(!item) return;
+      chips.push(`<span class="solver-filter-chip">${label}：${item.label} ${item.color}${item.shape}<button type="button" data-clear-filter="${key}" data-filter-item="${id}" aria-label="${label}条件から${item.label} ${item.color}${item.shape}を解除">×</button></span>`);
+    });
   });
   if(chips.length) chips.push('<button type="button" class="solver-filter-reset" data-clear-filter="all">条件をすべて解除</button>');
   summary.innerHTML = chips.join('');
-  document.getElementById('completed-recipe-filter-btn').classList.toggle('active', Boolean(solverFilterState.completedId));
-  document.getElementById('unfinished-recipe-filter-btn').classList.toggle('active', Boolean(solverFilterState.unfinishedId));
-  document.getElementById('stock-recipe-filter-btn').classList.toggle('active', Boolean(solverFilterState.keptInStockId));
+  document.getElementById('completed-recipe-filter-btn').classList.toggle('active', solverFilterState.completedIds.length > 0);
+  document.getElementById('unfinished-recipe-filter-btn').classList.toggle('active', solverFilterState.unfinishedIds.length > 0);
+  document.getElementById('stock-recipe-filter-btn').classList.toggle('active', solverFilterState.keptInStockIds.length > 0);
 }
 
 function resetSolverRecipeFilters(){
-  solverFilterState.completedId = null;
-  solverFilterState.unfinishedId = null;
-  solverFilterState.keptInStockId = null;
+  solverFilterState.completedIds = [];
+  solverFilterState.unfinishedIds = [];
+  solverFilterState.keptInStockIds = [];
   solverFilterState.selecting = null;
+  solverFilterDraftIds = new Set();
   if(solverFilterPanel){
     solverFilterPanel.hidden = true;
     document.getElementById('completed-recipe-filter-btn').setAttribute('aria-expanded','false');
@@ -2400,29 +2412,45 @@ function resetSolverRecipeFilters(){
   }
 }
 
+function solverFilterStateKey(kind){
+  return kind === 'completed' ? 'completedIds' : (kind === 'unfinished' ? 'unfinishedIds' : 'keptInStockIds');
+}
+
+function renderSolverFilterDraftSelection(){
+  solverFilterOptions.querySelectorAll('[data-filter-item]').forEach(option=>{
+    const id = option.dataset.filterItem;
+    const selected = id ? solverFilterDraftIds.has(id) : solverFilterDraftIds.size === 0;
+    option.classList.toggle('selected', selected);
+    option.setAttribute('aria-pressed', String(selected));
+  });
+  document.getElementById('solver-filter-selection-count').textContent = `${solverFilterDraftIds.size}件選択中`;
+}
+
 function openSolverRecipeFilter(kind){
   solverFilterState.selecting = kind;
-  const stateKey = kind === 'completed' ? 'completedId' : (kind === 'unfinished' ? 'unfinishedId' : 'keptInStockId');
+  const stateKey = solverFilterStateKey(kind);
+  solverFilterDraftIds = new Set(solverFilterState[stateKey]);
   const conditionLabel = kind === 'completed' ? '完成させたい' : (kind === 'unfinished' ? '未完成にしたい' : 'ストックに置いておきたい');
-  solverFilterTitle.textContent = `${conditionLabel}手持ちレシピを選択してください`;
+  solverFilterTitle.textContent = `${conditionLabel}手持ちレシピをすべて選択してください`;
   const options = solverHandFilterItems();
   solverFilterOptions.innerHTML = `
-    <button type="button" class="solver-filter-option solver-filter-clear-option" data-filter-item="">この条件を指定しない</button>
+    <button type="button" class="solver-filter-option solver-filter-clear-option" data-filter-item="">この条件の選択をすべて解除</button>
     ${options.map(item=>`
-      <button type="button" class="solver-filter-option${solverFilterState[stateKey]===item.id?' selected':''}" data-filter-item="${item.id}">
+      <button type="button" class="solver-filter-option" data-filter-item="${item.id}" aria-pressed="false">
         ${recipeShapeIconHTML(item.shape,item.color)}<span class="solver-filter-option-label">${item.label}　${item.color}${item.shape}</span>
       </button>`).join('')}`;
   solverFilterPanel.hidden = false;
   document.getElementById('completed-recipe-filter-btn').setAttribute('aria-expanded', String(kind === 'completed'));
   document.getElementById('unfinished-recipe-filter-btn').setAttribute('aria-expanded', String(kind === 'unfinished'));
   document.getElementById('stock-recipe-filter-btn').setAttribute('aria-expanded', String(kind === 'stock'));
+  renderSolverFilterDraftSelection();
   solverFilterOptions.querySelector('.selected, .solver-filter-option')?.focus();
 }
 
 function comboMatchesSolverRecipeFilters(item){
-  if(solverFilterState.completedId && !item.slots.some(slot=>slot.sourceId === solverFilterState.completedId && slot.completed !== false)) return false;
-  if(solverFilterState.unfinishedId && !item.slots.some(slot=>slot.sourceId === solverFilterState.unfinishedId && slot.completed === false)) return false;
-  if(solverFilterState.keptInStockId && item.slots.some(slot=>slot.sourceId === solverFilterState.keptInStockId)) return false;
+  if(!solverFilterState.completedIds.every(id=>item.slots.some(slot=>slot.sourceId === id && slot.completed !== false))) return false;
+  if(!solverFilterState.unfinishedIds.every(id=>item.slots.some(slot=>slot.sourceId === id && slot.completed === false))) return false;
+  if(!solverFilterState.keptInStockIds.every(id=>!item.slots.some(slot=>slot.sourceId === id))) return false;
   return true;
 }
 
@@ -2432,12 +2460,10 @@ function filterCombosBySolverRecipeConditions(items){
 
 function solverFilterDescription(){
   const parts = [];
-  const completed = solverFilterItemById(solverFilterState.completedId);
-  const unfinished = solverFilterItemById(solverFilterState.unfinishedId);
-  const keptInStock = solverFilterItemById(solverFilterState.keptInStockId);
-  if(completed) parts.push(`${completed.label} ${completed.color}${completed.shape}を完成`);
-  if(unfinished) parts.push(`${unfinished.label} ${unfinished.color}${unfinished.shape}を未完成`);
-  if(keptInStock) parts.push(`${keptInStock.label} ${keptInStock.color}${keptInStock.shape}をストックに保持`);
+  const describeItems = ids=>ids.map(solverFilterItemById).filter(Boolean).map(item=>`${item.label} ${item.color}${item.shape}`).join('、');
+  if(solverFilterState.completedIds.length) parts.push(`${describeItems(solverFilterState.completedIds)}を完成`);
+  if(solverFilterState.unfinishedIds.length) parts.push(`${describeItems(solverFilterState.unfinishedIds)}を未完成`);
+  if(solverFilterState.keptInStockIds.length) parts.push(`${describeItems(solverFilterState.keptInStockIds)}をストックに保持`);
   return parts.length ? `（条件：${parts.join('・')}）` : '';
 }
 
@@ -2458,13 +2484,21 @@ document.getElementById('solver-filter-close').addEventListener('click', ()=>{
 solverFilterOptions.addEventListener('click', (e)=>{
   const option = e.target.closest('[data-filter-item]');
   if(!option || !solverFilterState.selecting) return;
-  const key = solverFilterState.selecting === 'completed' ? 'completedId' : (solverFilterState.selecting === 'unfinished' ? 'unfinishedId' : 'keptInStockId');
-  const otherKeys = ['completedId','unfinishedId','keptInStockId'].filter(stateKey=>stateKey !== key);
   const selectedId = option.dataset.filterItem || null;
-  solverFilterState[key] = selectedId;
-  // 同じ実物レシピを完成・未完成・ストック保持へ同時指定する矛盾は、後から選んだ条件を優先する。
-  if(selectedId) otherKeys.forEach(otherKey=>{
-    if(solverFilterState[otherKey] === selectedId) solverFilterState[otherKey] = null;
+  if(!selectedId) solverFilterDraftIds.clear();
+  else if(solverFilterDraftIds.has(selectedId)) solverFilterDraftIds.delete(selectedId);
+  else solverFilterDraftIds.add(selectedId);
+  renderSolverFilterDraftSelection();
+});
+document.getElementById('solver-filter-apply').addEventListener('click', ()=>{
+  if(!solverFilterState.selecting) return;
+  const key = solverFilterStateKey(solverFilterState.selecting);
+  const otherKeys = ['completedIds','unfinishedIds','keptInStockIds'].filter(stateKey=>stateKey !== key);
+  const selectedIds = [...solverFilterDraftIds];
+  solverFilterState[key] = selectedIds;
+  // 同じ実物レシピを完成・未完成・ストック保持へ同時指定する矛盾は、後から確定した条件を優先する。
+  otherKeys.forEach(otherKey=>{
+    solverFilterState[otherKey] = solverFilterState[otherKey].filter(id=>!solverFilterDraftIds.has(id));
   });
   solverFilterPanel.hidden = true;
   document.getElementById('completed-recipe-filter-btn').setAttribute('aria-expanded','false');
@@ -2477,11 +2511,13 @@ document.getElementById('solver-filter-summary').addEventListener('click', (e)=>
   const button = e.target.closest('[data-clear-filter]');
   if(!button) return;
   if(button.dataset.clearFilter === 'all'){
-    solverFilterState.completedId = null;
-    solverFilterState.unfinishedId = null;
-    solverFilterState.keptInStockId = null;
+    solverFilterState.completedIds = [];
+    solverFilterState.unfinishedIds = [];
+    solverFilterState.keptInStockIds = [];
   }else{
-    solverFilterState[button.dataset.clearFilter] = null;
+    const key = button.dataset.clearFilter;
+    const id = button.dataset.filterItem;
+    solverFilterState[key] = solverFilterState[key].filter(itemId=>itemId !== id);
   }
   renderSolverFilterSummary();
   refreshSolverSearchForFilters();
