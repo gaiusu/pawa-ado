@@ -901,7 +901,7 @@ button.primary.secondary{
 }
 .solver-filter-controls{
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:repeat(3, 1fr);
   gap:10px;
   margin-top:12px;
 }
@@ -1549,9 +1549,10 @@ footer{
         <button type="button" class="primary" id="target-search-btn">上の差分スコアを手持ちで探す</button>
         <button type="button" class="primary secondary" id="achievable-search-btn">今の手持ちで到達できるスコア一覧を見る</button>
       </div>
-      <div class="solver-filter-controls" aria-label="レシピの完成状態で候補を絞り込む">
+      <div class="solver-filter-controls" aria-label="レシピの完成状態と配置先で候補を絞り込む">
         <button type="button" class="solver-filter-btn" id="completed-recipe-filter-btn" aria-expanded="false" aria-controls="solver-recipe-filter-panel">完成させたいレシピで検索</button>
         <button type="button" class="solver-filter-btn" id="unfinished-recipe-filter-btn" aria-expanded="false" aria-controls="solver-recipe-filter-panel">未完成としたいレシピで検索</button>
+        <button type="button" class="solver-filter-btn" id="stock-recipe-filter-btn" aria-expanded="false" aria-controls="solver-recipe-filter-panel">ストックに置いておきたいレシピで検索</button>
       </div>
       <div class="solver-filter-panel" id="solver-recipe-filter-panel" hidden>
         <div class="solver-filter-panel-head">
@@ -1687,7 +1688,7 @@ footer{
       <h2 class="card-title">更新履歴</h2>
       <div class="note-block" id="changelog-block">
         <ul style="list-style:none; margin:0; padding:0;">
-          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-13</strong>　デートを挟む準備案で、交換後のアクティブ配置とストック内容が同じなら、同一レシピが入っていたストック番号だけ異なる案を実質同一として統合。「完成させたいレシピで検索」「未完成としたいレシピで検索」を追加し、アクティブ／ストックの実物枠を条件として、差分達成候補と到達可能スコア候補を絞り込めるようにした。両条件は併用でき、同じレシピへの矛盾指定は後から選んだ条件を優先する。</li>
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-13</strong>　デートを挟む準備案で、交換後のアクティブ配置とストック内容が同じなら、同一レシピが入っていたストック番号だけ異なる案を実質同一として統合。「完成させたいレシピで検索」「未完成としたいレシピで検索」「ストックに置いておきたいレシピで検索」を追加し、アクティブ／ストックの実物枠を条件として、差分達成候補と到達可能スコア候補を絞り込めるようにした。3条件は併用でき、同じレシピへの矛盾指定は後から選んだ条件を優先する。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-11</strong>　デートを挟む準備案を、表示上の「次ターン○通り」が多い順に並べるよう変更。同数の場合は従来の探索順を維持する。「今の手持ちで到達できるスコア一覧」では、各獲得スコアの横に「現在スコア＋獲得スコア＝到達後合計」を表示するようにした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-09</strong>　レシピ選択グリッドをWASD／矢印キーで上下左右に移動し、Enterで選択できるよう改善。連続登録のストック選択中はTキーで「空き（選択を終了する）」を即時選択できる。グリッド下部に小さな操作案内を追加し、スマホ・タブレットなどタッチ操作端末ではS・WASD・矢印・Enter・Esc・T・1・2キーを含むキーボード注釈を非表示にした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-09</strong>　差分検索・達成可能スコア・次ターンの達成方法を含む全レシピ結果の表示順を「すべて完成→1枠目が未完成→2枠目が未完成→3枠目が未完成」に統一。複数枠が未完成の候補はこの4分類の後に表示する。準備案の「次のターンの達成方法」は初期状態から展開し、クリックで閉じられるようにした。</li>
@@ -2349,8 +2350,8 @@ function readStockSlots(){
   return slots;
 }
 
-/* ============== ソルバー：完成／未完成にしたい手持ちレシピで絞り込み ============== */
-const solverFilterState = {completedId:null, unfinishedId:null, selecting:null, lastSearch:'target'};
+/* ============== ソルバー：完成／未完成／ストックに置きたい手持ちレシピで絞り込み ============== */
+const solverFilterState = {completedId:null, unfinishedId:null, keptInStockId:null, selecting:null, lastSearch:'target'};
 const solverFilterPanel = document.getElementById('solver-recipe-filter-panel');
 const solverFilterOptions = document.getElementById('solver-filter-options');
 const solverFilterTitle = document.getElementById('solver-filter-panel-title');
@@ -2373,7 +2374,7 @@ function solverFilterItemById(id){
 function renderSolverFilterSummary(){
   const summary = document.getElementById('solver-filter-summary');
   const chips = [];
-  [['completedId','完成'], ['unfinishedId','未完成']].forEach(([key,label])=>{
+  [['completedId','完成'], ['unfinishedId','未完成'], ['keptInStockId','ストックに保持']].forEach(([key,label])=>{
     const item = solverFilterItemById(solverFilterState[key]);
     if(!item) return;
     chips.push(`<span class="solver-filter-chip">${label}：${item.label} ${item.color}${item.shape}<button type="button" data-clear-filter="${key}" aria-label="${label}条件を解除">×</button></span>`);
@@ -2382,24 +2383,27 @@ function renderSolverFilterSummary(){
   summary.innerHTML = chips.join('');
   document.getElementById('completed-recipe-filter-btn').classList.toggle('active', Boolean(solverFilterState.completedId));
   document.getElementById('unfinished-recipe-filter-btn').classList.toggle('active', Boolean(solverFilterState.unfinishedId));
+  document.getElementById('stock-recipe-filter-btn').classList.toggle('active', Boolean(solverFilterState.keptInStockId));
 }
 
 function resetSolverRecipeFilters(){
   solverFilterState.completedId = null;
   solverFilterState.unfinishedId = null;
+  solverFilterState.keptInStockId = null;
   solverFilterState.selecting = null;
   if(solverFilterPanel){
     solverFilterPanel.hidden = true;
     document.getElementById('completed-recipe-filter-btn').setAttribute('aria-expanded','false');
     document.getElementById('unfinished-recipe-filter-btn').setAttribute('aria-expanded','false');
+    document.getElementById('stock-recipe-filter-btn').setAttribute('aria-expanded','false');
     renderSolverFilterSummary();
   }
 }
 
 function openSolverRecipeFilter(kind){
   solverFilterState.selecting = kind;
-  const stateKey = kind === 'completed' ? 'completedId' : 'unfinishedId';
-  const conditionLabel = kind === 'completed' ? '完成させたい' : '未完成にしたい';
+  const stateKey = kind === 'completed' ? 'completedId' : (kind === 'unfinished' ? 'unfinishedId' : 'keptInStockId');
+  const conditionLabel = kind === 'completed' ? '完成させたい' : (kind === 'unfinished' ? '未完成にしたい' : 'ストックに置いておきたい');
   solverFilterTitle.textContent = `${conditionLabel}手持ちレシピを選択してください`;
   const options = solverHandFilterItems();
   solverFilterOptions.innerHTML = `
@@ -2411,12 +2415,14 @@ function openSolverRecipeFilter(kind){
   solverFilterPanel.hidden = false;
   document.getElementById('completed-recipe-filter-btn').setAttribute('aria-expanded', String(kind === 'completed'));
   document.getElementById('unfinished-recipe-filter-btn').setAttribute('aria-expanded', String(kind === 'unfinished'));
+  document.getElementById('stock-recipe-filter-btn').setAttribute('aria-expanded', String(kind === 'stock'));
   solverFilterOptions.querySelector('.selected, .solver-filter-option')?.focus();
 }
 
 function comboMatchesSolverRecipeFilters(item){
   if(solverFilterState.completedId && !item.slots.some(slot=>slot.sourceId === solverFilterState.completedId && slot.completed !== false)) return false;
   if(solverFilterState.unfinishedId && !item.slots.some(slot=>slot.sourceId === solverFilterState.unfinishedId && slot.completed === false)) return false;
+  if(solverFilterState.keptInStockId && item.slots.some(slot=>slot.sourceId === solverFilterState.keptInStockId)) return false;
   return true;
 }
 
@@ -2428,8 +2434,10 @@ function solverFilterDescription(){
   const parts = [];
   const completed = solverFilterItemById(solverFilterState.completedId);
   const unfinished = solverFilterItemById(solverFilterState.unfinishedId);
+  const keptInStock = solverFilterItemById(solverFilterState.keptInStockId);
   if(completed) parts.push(`${completed.label} ${completed.color}${completed.shape}を完成`);
   if(unfinished) parts.push(`${unfinished.label} ${unfinished.color}${unfinished.shape}を未完成`);
+  if(keptInStock) parts.push(`${keptInStock.label} ${keptInStock.color}${keptInStock.shape}をストックに保持`);
   return parts.length ? `（条件：${parts.join('・')}）` : '';
 }
 
@@ -2440,23 +2448,28 @@ function refreshSolverSearchForFilters(){
 
 document.getElementById('completed-recipe-filter-btn').addEventListener('click', ()=>openSolverRecipeFilter('completed'));
 document.getElementById('unfinished-recipe-filter-btn').addEventListener('click', ()=>openSolverRecipeFilter('unfinished'));
+document.getElementById('stock-recipe-filter-btn').addEventListener('click', ()=>openSolverRecipeFilter('stock'));
 document.getElementById('solver-filter-close').addEventListener('click', ()=>{
   solverFilterPanel.hidden = true;
   document.getElementById('completed-recipe-filter-btn').setAttribute('aria-expanded','false');
   document.getElementById('unfinished-recipe-filter-btn').setAttribute('aria-expanded','false');
+  document.getElementById('stock-recipe-filter-btn').setAttribute('aria-expanded','false');
 });
 solverFilterOptions.addEventListener('click', (e)=>{
   const option = e.target.closest('[data-filter-item]');
   if(!option || !solverFilterState.selecting) return;
-  const key = solverFilterState.selecting === 'completed' ? 'completedId' : 'unfinishedId';
-  const otherKey = solverFilterState.selecting === 'completed' ? 'unfinishedId' : 'completedId';
+  const key = solverFilterState.selecting === 'completed' ? 'completedId' : (solverFilterState.selecting === 'unfinished' ? 'unfinishedId' : 'keptInStockId');
+  const otherKeys = ['completedId','unfinishedId','keptInStockId'].filter(stateKey=>stateKey !== key);
   const selectedId = option.dataset.filterItem || null;
   solverFilterState[key] = selectedId;
-  // 同じ実物レシピを同時に完成・未完成へ指定する矛盾は、後から選んだ条件を優先する。
-  if(selectedId && solverFilterState[otherKey] === selectedId) solverFilterState[otherKey] = null;
+  // 同じ実物レシピを完成・未完成・ストック保持へ同時指定する矛盾は、後から選んだ条件を優先する。
+  if(selectedId) otherKeys.forEach(otherKey=>{
+    if(solverFilterState[otherKey] === selectedId) solverFilterState[otherKey] = null;
+  });
   solverFilterPanel.hidden = true;
   document.getElementById('completed-recipe-filter-btn').setAttribute('aria-expanded','false');
   document.getElementById('unfinished-recipe-filter-btn').setAttribute('aria-expanded','false');
+  document.getElementById('stock-recipe-filter-btn').setAttribute('aria-expanded','false');
   renderSolverFilterSummary();
   refreshSolverSearchForFilters();
 });
@@ -2466,6 +2479,7 @@ document.getElementById('solver-filter-summary').addEventListener('click', (e)=>
   if(button.dataset.clearFilter === 'all'){
     solverFilterState.completedId = null;
     solverFilterState.unfinishedId = null;
+    solverFilterState.keptInStockId = null;
   }else{
     solverFilterState[button.dataset.clearFilter] = null;
   }
@@ -3340,7 +3354,7 @@ document.getElementById('target-search-btn').addEventListener('click', ()=>{
   const twoTurnHtml = buildTwoTurnPlanHtml(activeSlots, stockSlots, rank, diff);
 
   if(found.length === 0){
-    resultDiv.innerHTML = `<div class="target-status notfound">手持ちのアクティブ3枚・ストック（空きを除く）の組み合わせでは、差分 ${diff} 点を作れる構成が見つかりませんでした。${filterDescription ? `指定した完成状態の条件もご確認ください。${filterDescription}` : 'ストックの内容や鍛冶ランクをご確認ください。'}</div>` + twoTurnHtml + alternativeTargetHtml;
+    resultDiv.innerHTML = `<div class="target-status notfound">手持ちのアクティブ3枚・ストック（空きを除く）の組み合わせでは、差分 ${diff} 点を作れる構成が見つかりませんでした。${filterDescription ? `指定した検索条件もご確認ください。${filterDescription}` : 'ストックの内容や鍛冶ランクをご確認ください。'}</div>` + twoTurnHtml + alternativeTargetHtml;
     attachTwoTurnPlanToggle();
     attachHundredRowToggle();
     attachGuaranteedGoldRowToggle();
@@ -3400,7 +3414,7 @@ document.getElementById('achievable-search-btn').addEventListener('click', ()=>{
   const allCombos = filterCombosBySolverRecipeConditions(enumerateAllCombos(activeSlots, stockSlots, rank));
   const filterDescription = solverFilterDescription();
   if(allCombos.length === 0){
-    resultDiv.innerHTML = `<div class="target-status notfound">指定した完成状態を満たす組み合わせが見つかりませんでした。${filterDescription}</div>`;
+    resultDiv.innerHTML = `<div class="target-status notfound">指定した検索条件を満たす組み合わせが見つかりませんでした。${filterDescription}</div>`;
     return;
   }
 
