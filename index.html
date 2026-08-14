@@ -1696,6 +1696,7 @@ footer{
       <h2 class="card-title">更新履歴</h2>
       <div class="note-block" id="changelog-block">
         <ul style="list-style:none; margin:0; padding:0;">
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-14</strong>　デートを挟む準備案の「次のターンの達成方法」に表示される各候補へ、通常の差分候補と同じ「ターン終了後」ボタンを追加。次ターンの鍛冶実行後に残るアクティブ・ストック・合計スコアを確認し、その状態をツールへ反映できるようにした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-13</strong>　デートを挟む準備案で、交換後のアクティブ配置とストック内容が同じなら、同一レシピが入っていたストック番号だけ異なる案を実質同一として統合。「完成させたいレシピで検索」「未完成としてアクティブに置いておきたいレシピで検索」「ストックに置いておきたいレシピで検索」を追加し、アクティブ／ストックの実物枠を条件として、差分達成候補と到達可能スコア候補を絞り込めるようにした。各条件で複数レシピを選択でき、選択した全レシピを満たす候補を表示する。3条件は併用でき、同じレシピへの矛盾指定は後から確定した条件を優先する。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-11</strong>　デートを挟む準備案を、表示上の「次ターン○通り」が多い順に並べるよう変更。同数の場合は従来の探索順を維持する。「今の手持ちで到達できるスコア一覧」では、各獲得スコアの横に「現在スコア＋獲得スコア＝到達後合計」を表示するようにした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-09</strong>　レシピ選択グリッドをWASD／矢印キーで上下左右に移動し、Enterで選択できるよう改善。連続登録のストック選択中はTキーで「空き（選択を終了する）」を即時選択できる。グリッド下部に小さな操作案内を追加し、スマホ・タブレットなどタッチ操作端末ではS・WASD・矢印・Enter・Esc・T・1・2キーを含むキーボード注釈を非表示にした。</li>
@@ -3274,7 +3275,7 @@ function describeFirstTurnExchangeSteps(placement){
   return steps;
 }
 
-function buildTwoTurnPlanHtml(activeSlots, stockSlots, rank, diff){
+function buildTwoTurnPlanHtml(activeSlots, stockSlots, rank, diff, currentScore){
   const MAX_PLANS = 20;
   const MAX_SECOND_TURN_COMBOS = 20;
   const MAX_SINGLE_TURN_SCORE = 68; // 現行ルール上の理論最高値（3.7章）
@@ -3300,7 +3301,7 @@ function buildTwoTurnPlanHtml(activeSlots, stockSlots, rank, diff){
     const exchangeSteps = describeFirstTurnExchangeSteps(placement);
     if(exchangeSteps.length === 0) continue;
     const secondTurnUniqueCount = new Set(secondTurnCombos.map(comboDedupeKey)).size;
-    plans.push({nextActive, secondTurnCombos, secondTurnUniqueCount, exchangeSteps});
+    plans.push({nextActive, nextStock, secondTurnCombos, secondTurnUniqueCount, exchangeSteps});
     if(plans.length >= MAX_PLANS) break;
   }
 
@@ -3316,7 +3317,9 @@ function buildTwoTurnPlanHtml(activeSlots, stockSlots, rank, diff){
     <div class="two-turn-list">`;
 
   plans.forEach((plan, idx)=>{
-    const {html: secondTurnHtml, uniqueCount} = renderComboList(plan.secondTurnCombos, MAX_SECOND_TURN_COMBOS);
+    // 準備ターンではスコアが増えないため、現在スコアをそのまま次ターン開始時スコアとして使う。
+    // 交換後ストックも渡し、通常候補と同じ「ターン終了後」プレビューと反映機能を表示する。
+    const {html: secondTurnHtml, uniqueCount} = renderComboList(plan.secondTurnCombos, MAX_SECOND_TURN_COMBOS, currentScore, plan.nextStock);
     const stepsHtml = plan.exchangeSteps.map(step=>`<li>${step}</li>`).join('');
     const activeHtml = plan.nextActive.map((s, slotIdx)=>{
       const topClass = slotIdx === 0 ? ' top' : '';
@@ -3387,7 +3390,7 @@ document.getElementById('target-search-btn').addEventListener('click', ()=>{
   const guaranteedGoldHtml = buildGuaranteedGoldHtml(filteredCombos, diff, currentScore, stockSlots);
   const alternativeTargetHtml = hundredHtml + guaranteedGoldHtml;
   // 1ターンで達成できるかどうかに関係なく、交換だけの準備ターンを挟む案も探索する。
-  const twoTurnHtml = buildTwoTurnPlanHtml(activeSlots, stockSlots, rank, diff);
+  const twoTurnHtml = buildTwoTurnPlanHtml(activeSlots, stockSlots, rank, diff, currentScore);
 
   if(found.length === 0){
     resultDiv.innerHTML = `<div class="target-status notfound">手持ちのアクティブ3枚・ストック（空きを除く）の組み合わせでは、差分 ${diff} 点を作れる構成が見つかりませんでした。${filterDescription ? `指定した検索条件もご確認ください。${filterDescription}` : 'ストックの内容や鍛冶ランクをご確認ください。'}</div>` + twoTurnHtml + alternativeTargetHtml;
