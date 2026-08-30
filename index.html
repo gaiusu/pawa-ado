@@ -1026,6 +1026,11 @@ button.primary.secondary{
   transition:background .12s;
 }
 .score-row-btn:hover{background:var(--steel-800);}
+.score-row-btn.kakashi-total-row{
+  background:rgba(238,196,74,.10);
+  box-shadow:inset 3px 0 0 rgba(238,196,74,.58);
+}
+.score-row-btn.kakashi-total-row:hover{background:rgba(238,196,74,.17);}
 .hundred-row-btn,
 .gold-target-row-btn{
   width:100%;
@@ -1064,6 +1069,17 @@ button.primary.secondary{
   font-weight:400;
   color:var(--steel-300);
   white-space:nowrap;
+}
+.score-row-kakashi-marker{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin-left:4px;
+  vertical-align:middle;
+}
+.score-row-kakashi-marker .recipe-shape-icon{
+  transform:scale(.72);
+  margin:-5px -4px;
 }
 .score-row-count{
   font-family:var(--mono);
@@ -1696,6 +1712,7 @@ footer{
       <h2 class="card-title">更新履歴</h2>
       <div class="note-block" id="changelog-block">
         <ul style="list-style:none; margin:0; padding:0;">
+          <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-30</strong>　「今の手持ちで到達できるスコア一覧」で、到達後の合計が実際にカカシ確定となる下2桁ゾロ目の場合、そのスコア行を薄い黄色で強調し、合計点の右にカカシアイコンを表示するようにした。金レシピが優先される77・326・573と3桁ゾロ目は対象外。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-14</strong>　デートを挟む準備案の「次のターンの達成方法」に表示される各候補へ、通常の差分候補と同じ「ターン終了後」ボタンを追加。次ターンの鍛冶実行後に残るアクティブ・ストック・合計スコアを確認し、その状態をツールへ反映できるようにした。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-13</strong>　デートを挟む準備案で、交換後のアクティブ配置とストック内容が同じなら、同一レシピが入っていたストック番号だけ異なる案を実質同一として統合。「完成させたいレシピで検索」「未完成としてアクティブに置いておきたいレシピで検索」「ストックに置いておきたいレシピで検索」を追加し、アクティブ／ストックの実物枠を条件として、差分達成候補と到達可能スコア候補を絞り込めるようにした。各条件で複数レシピを選択でき、選択した全レシピを満たす候補を表示する。3条件は併用でき、同じレシピへの矛盾指定は後から確定した条件を優先する。</li>
           <li style="margin-bottom:10px;"><strong style="color:var(--ember); font-family:var(--mono); font-size:12px;">2026-08-11</strong>　デートを挟む準備案を、表示上の「次ターン○通り」が多い順に並べるよう変更。同数の場合は従来の探索順を維持する。「今の手持ちで到達できるスコア一覧」では、各獲得スコアの横に「現在スコア＋獲得スコア＝到達後合計」を表示するようにした。</li>
@@ -2614,6 +2631,9 @@ function goldRecipeForTriple(score){
 // （2026-07-25、ユーザー提供の公式情報に基づき追加）。
 const EXTRA_GOLD_SCORES = [77, 326, 573];
 function isExtraGoldScore(score){ return EXTRA_GOLD_SCORES.includes(score); }
+function isKakashiDropScore(score){
+  return !isExtraGoldScore(score) && isLower2Repeat(score);
+}
 
 // combo-card1件の結果から「ターン終了後のアクティブ・ストック状態」を表すHTMLを返す。
 // item.slots : [{color,shape,completed,slotIdx}] (slotIdx は0=1枠目,1=2枠目,2=3枠目)
@@ -2645,7 +2665,7 @@ function renderNextStateHTML(item, currentScore, stockSlots){
   // 77は「下2桁ゾロ目（カカシ確定）」の条件にも該当するが、金レシピ確定を優先しカカシ確定は発生しない扱いとする
   // （2026-07-25、ユーザー確認済み）。
   const extraGold = !gold && isExtraGoldScore(newScore);
-  const kakashi = !gold && !extraGold && isLower2Repeat(newScore);
+  const kakashi = isKakashiDropScore(newScore);
   if(gold){
     for(let i=0;i<3;i++){
       if(!nextActive[i]){ nextActive[i] = {color:gold.color, shape:gold.shape, src:'金確定'}; break; }
@@ -3474,11 +3494,15 @@ document.getElementById('achievable-search-btn').addEventListener('click', ()=>{
     const combosForScore = byScore.get(score);
     const {html: comboHtml, uniqueCount} = renderComboList(combosForScore, 150, currentScore, stockSlots);
     const reachedTotal = currentScore + score;
+    const isKakashiTotal = isKakashiDropScore(reachedTotal);
+    const kakashiMarkerHtml = isKakashiTotal
+      ? `<span class="score-row-kakashi-marker" title="下2桁ゾロ目：カカシ確定補充">${recipeShapeIconHTML('カカシ','黄')}<span class="visually-hidden">下2桁ゾロ目のためカカシ確定補充</span></span>`
+      : '';
     html += `
       <div class="score-item">
-        <button type="button" class="score-row-btn" data-score-idx="${idx}" aria-expanded="false" aria-controls="score-detail-${idx}">
+        <button type="button" class="score-row-btn${isKakashiTotal ? ' kakashi-total-row' : ''}" data-score-idx="${idx}" aria-expanded="false" aria-controls="score-detail-${idx}">
           <span class="score-row-rank">${idx+1}</span>
-          <span class="score-row-value">${score} 点<span class="score-row-total">（現在 ${currentScore} ＋ ${score} ＝ 合計 ${reachedTotal} 点）</span></span>
+          <span class="score-row-value">${score} 点<span class="score-row-total">（現在 ${currentScore} ＋ ${score} ＝ 合計 ${reachedTotal} 点）${kakashiMarkerHtml}</span></span>
           <span class="score-row-count">${uniqueCount} 通り</span>
           <span class="score-row-caret">▾</span>
         </button>
