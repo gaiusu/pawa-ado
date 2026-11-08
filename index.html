@@ -1036,7 +1036,7 @@ button.primary.secondary{
 }
 .score-row-btn.kakashi-total-row:hover{background:rgba(238,196,74,.17);}
 .hundred-row-btn,
-.gold-target-row-btn{
+.drop-target-row-btn{
   width:100%;
   display:grid;
   grid-template-columns:1fr auto 20px;
@@ -1052,7 +1052,7 @@ button.primary.secondary{
   transition:background .12s;
 }
 .hundred-row-btn:hover,
-.gold-target-row-btn:hover{background:var(--steel-800);}
+.drop-target-row-btn:hover{background:var(--steel-800);}
 .score-row-rank{
   font-family:var(--mono);
   font-size:12px;
@@ -1098,7 +1098,7 @@ button.primary.secondary{
 }
 .score-row-btn.open .score-row-caret{transform:rotate(180deg); color:var(--ember);}
 .hundred-row-btn.open .score-row-caret,
-.gold-target-row-btn.open .score-row-caret{transform:rotate(180deg); color:var(--ember);}
+.drop-target-row-btn.open .score-row-caret{transform:rotate(180deg); color:var(--ember);}
 .score-row-detail{
   max-height:0;
   overflow:hidden;
@@ -3227,16 +3227,15 @@ function buildHundredMultipleHtml(allCombos, diff, currentScore, stockSlots){
   `;
 }
 
-// 目標到達スコアとは別に、金レシピ確定ドロップ対象
-// （3桁ゾロ目および77・326・573）へ届く組み合わせを案内する。
-function buildGuaranteedGoldHtml(allCombos, diff, currentScore, stockSlots){
+// 目標以外の金レシピ・カカシ確定スコアへ届く組み合わせを案内する。
+function buildGuaranteedDropHtml(allCombos, diff, currentScore, stockSlots){
   const byTargetScore = new Map();
   allCombos.forEach(item=>{
     const gained = item.r.total;
     if(gained === diff) return; // 主要な目標到達結果との重複を除外
     const newTotal = currentScore + gained;
     if(newTotal <= currentScore) return;
-    if(!isTripleDigit(newTotal) && !isExtraGoldScore(newTotal)) return;
+    if(!isTripleDigit(newTotal) && !isExtraGoldScore(newTotal) && !isKakashiDropScore(newTotal)) return;
     if(!byTargetScore.has(newTotal)) byTargetScore.set(newTotal, []);
     byTargetScore.get(newTotal).push(item);
   });
@@ -3245,19 +3244,22 @@ function buildGuaranteedGoldHtml(allCombos, diff, currentScore, stockSlots){
   return [...byTargetScore.keys()].sort((a,b)=>a-b).map((targetScore, idx)=>{
     const combos = byTargetScore.get(targetScore);
     const gained = targetScore - currentScore;
+    const kakashi = isKakashiDropScore(targetScore);
+    const dropLabel = kakashi ? 'カカシ確定' : '金レシピ確定';
+    const dropNote = kakashi ? '下2桁ゾロ目でカカシが確定補充' : '到達時に金レシピが確定ドロップ';
     const {html: comboHtml, uniqueCount} = renderComboList(combos, 150, currentScore, stockSlots);
     return `
       <div class="target-status found bonus-target-note" style="margin-top:16px;">
-        目標到達スコアとは別に、<strong>${targetScore}</strong>（到達時に金レシピが確定ドロップ）に届く組み合わせが計 ${uniqueCount} 通り見つかりました。
+        目標到達スコアとは別に、<strong>${targetScore}</strong>（${dropNote}）に届く組み合わせが計 ${uniqueCount} 通り見つかりました。
       </div>
-      <div class="score-list" id="gold-target-score-list-${idx}">
+      <div class="score-list" id="drop-target-score-list-${idx}">
         <div class="score-item">
-          <button type="button" class="gold-target-row-btn" id="alternative-score-${targetScore}" data-alternative-score="${targetScore}" data-gold-target-idx="${idx}" aria-expanded="false" aria-controls="gold-target-detail-${idx}">
-            <span class="score-row-value">${targetScore} 点（${gained} 点獲得・金レシピ確定）</span>
+          <button type="button" class="drop-target-row-btn" id="alternative-score-${targetScore}" data-alternative-score="${targetScore}" aria-expanded="false" aria-controls="drop-target-detail-${idx}">
+            <span class="score-row-value">${targetScore} 点（${gained} 点獲得・${dropLabel}）</span>
             <span class="score-row-count">${uniqueCount} 通り</span>
             <span class="score-row-caret">▾</span>
           </button>
-          <div class="score-row-detail gold-target-row-detail" id="gold-target-detail-${idx}">${comboHtml}</div>
+          <div class="score-row-detail drop-target-row-detail" id="drop-target-detail-${idx}">${comboHtml}</div>
         </div>
       </div>
     `;
@@ -3411,8 +3413,8 @@ document.getElementById('target-search-btn').addEventListener('click', ()=>{
   const filterDescription = solverFilterDescription();
   const found = filteredCombos.filter(item => item.r.total === diff);
   const hundredHtml = buildHundredMultipleHtml(filteredCombos, diff, currentScore, stockSlots);
-  const guaranteedGoldHtml = buildGuaranteedGoldHtml(filteredCombos, diff, currentScore, stockSlots);
-  const alternativeTargetHtml = hundredHtml + guaranteedGoldHtml;
+  const guaranteedDropHtml = buildGuaranteedDropHtml(filteredCombos, diff, currentScore, stockSlots);
+  const alternativeTargetHtml = hundredHtml + guaranteedDropHtml;
   // 1ターンで達成できるかどうかに関係なく、交換だけの準備ターンを挟む案も探索する。
   const twoTurnHtml = buildTwoTurnPlanHtml(activeSlots, stockSlots, rank, diff, currentScore);
 
@@ -3434,14 +3436,16 @@ document.getElementById('target-search-btn').addEventListener('click', ()=>{
     alternatives.forEach(row=>{
       const link = document.createElement('a');
       link.href = '#' + row.id;
-      link.textContent = row.dataset.alternativeScore + '点の候補を見る ↓';
+      const score = Number(row.dataset.alternativeScore);
+      const note = isKakashiDropScore(score) ? '（カカシ確定）' : '';
+      link.textContent = score + '点' + note + 'の候補を見る ↓';
       nav.append(link);
     });
     resultDiv.firstElementChild.after(nav);
   }
   attachTwoTurnPlanToggle();
   attachHundredRowToggle();
-  attachGuaranteedGoldRowToggle();
+  attachGuaranteedDropRowToggle();
 });
 
 // 100の倍数候補リストの開閉トグル（達成可能スコア一覧のscore-row-btnとは別要素・別クラスにして干渉を避ける）
@@ -3458,12 +3462,11 @@ function attachHundredRowToggle(){
   });
 }
 
-// 金レシピ確定スコア候補リストの開閉トグル
-function attachGuaranteedGoldRowToggle(){
-  document.querySelectorAll('.gold-target-row-btn').forEach(btn=>{
+// 確定ドロップ候補リストの開閉トグル
+function attachGuaranteedDropRowToggle(){
+  document.querySelectorAll('.drop-target-row-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      const idx = btn.dataset.goldTargetIdx;
-      const detail = document.getElementById('gold-target-detail-'+idx);
+      const detail = document.getElementById(btn.getAttribute('aria-controls'));
       const isOpen = detail.classList.contains('open');
       detail.classList.toggle('open', !isOpen);
       btn.classList.toggle('open', !isOpen);
