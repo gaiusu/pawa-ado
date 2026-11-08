@@ -972,6 +972,10 @@ button.primary.secondary{
 .target-status.notfound{background:rgba(200,70,58,.12); border:1px solid var(--warn); color:var(--steel-100);}
 .target-status.stale{background:var(--steel-900); border:1px dashed var(--steel-600); color:var(--steel-300);}
 .target-status.bonus-target-note{background:rgba(212,175,55,.12); border:1px solid #d4af37; color:var(--steel-100);}
+.alternative-score-nav{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:-6px 0 18px; font-size:13px;}
+.alternative-score-nav a{display:inline-flex; align-items:center; min-height:36px; padding:4px 12px; border:1px solid var(--steel-600); border-radius:var(--radius); color:var(--steel-100); text-decoration:none;}
+.alternative-score-nav a:hover,.alternative-score-nav a:focus-visible{color:var(--ember); border-color:var(--ember);}
+[data-alternative-score]{scroll-margin-top:5rem;}
 .target-status.two-turn-note{background:rgba(53,118,184,.14); border:1px solid var(--c-blue); color:var(--steel-100);}
 .two-turn-list{display:flex; flex-direction:column; gap:10px; margin-bottom:18px;}
 .two-turn-plan{background:var(--steel-900); border:1px solid var(--steel-700); border-radius:var(--radius); padding:14px 16px;}
@@ -3204,7 +3208,7 @@ function buildHundredMultipleHtml(allCombos, diff, currentScore, stockSlots){
     totalUnique += uniqueCount;
     listHtml += `
       <div class="score-item">
-        <button type="button" class="hundred-row-btn" data-hundred-idx="${idx}" aria-expanded="false" aria-controls="hundred-detail-${idx}">
+        <button type="button" class="hundred-row-btn" id="alternative-score-${newTotal}" data-alternative-score="${newTotal}" data-hundred-idx="${idx}" aria-expanded="false" aria-controls="hundred-detail-${idx}">
           <span class="score-row-value">${newTotal} 点（${gained} 点獲得・100の倍数）</span>
           <span class="score-row-count">${uniqueCount} 通り</span>
           <span class="score-row-caret">▾</span>
@@ -3248,7 +3252,7 @@ function buildGuaranteedGoldHtml(allCombos, diff, currentScore, stockSlots){
       </div>
       <div class="score-list" id="gold-target-score-list-${idx}">
         <div class="score-item">
-          <button type="button" class="gold-target-row-btn" data-gold-target-idx="${idx}" aria-expanded="false" aria-controls="gold-target-detail-${idx}">
+          <button type="button" class="gold-target-row-btn" id="alternative-score-${targetScore}" data-alternative-score="${targetScore}" data-gold-target-idx="${idx}" aria-expanded="false" aria-controls="gold-target-detail-${idx}">
             <span class="score-row-value">${targetScore} 点（${gained} 点獲得・金レシピ確定）</span>
             <span class="score-row-count">${uniqueCount} 通り</span>
             <span class="score-row-caret">▾</span>
@@ -3414,16 +3418,27 @@ document.getElementById('target-search-btn').addEventListener('click', ()=>{
 
   if(found.length === 0){
     resultDiv.innerHTML = `<div class="target-status notfound">手持ちのアクティブ3枚・ストック（空きを除く）の組み合わせでは、差分 ${diff} 点を作れる構成が見つかりませんでした。${filterDescription ? `指定した検索条件もご確認ください。${filterDescription}` : 'ストックの内容や鍛冶ランクをご確認ください。'}</div>` + twoTurnHtml + alternativeTargetHtml;
-    attachTwoTurnPlanToggle();
-    attachHundredRowToggle();
-    attachGuaranteedGoldRowToggle();
-    return;
+  } else {
+    const MAX_SHOW = 150;
+    const {html: comboHtml, uniqueCount} = renderComboList(found, MAX_SHOW, currentScore, stockSlots);
+    const statusHtml = `<div class="target-status found">差分 ${diff} 点を、手持ちレシピだけで作れる構成が ${uniqueCount} 通り見つかりました${uniqueCount>MAX_SHOW ? `（上位 ${MAX_SHOW} 件を表示）` : ''}。${filterDescription}</div>`;
+    resultDiv.innerHTML = statusHtml + comboHtml + twoTurnHtml + alternativeTargetHtml;
   }
 
-  const MAX_SHOW = 150;
-  const {html: comboHtml, uniqueCount} = renderComboList(found, MAX_SHOW, currentScore, stockSlots);
-  const statusHtml = `<div class="target-status found">差分 ${diff} 点を、手持ちレシピだけで作れる構成が ${uniqueCount} 通り見つかりました${uniqueCount>MAX_SHOW ? `（上位 ${MAX_SHOW} 件を表示）` : ''}。${filterDescription}</div>`;
-  resultDiv.innerHTML = statusHtml + comboHtml + twoTurnHtml + alternativeTargetHtml;
+  const alternatives = resultDiv.querySelectorAll('[data-alternative-score]');
+  if(alternatives.length){
+    const nav = document.createElement('nav');
+    nav.className = 'alternative-score-nav';
+    nav.setAttribute('aria-label', 'ほかに到達できるスコア');
+    nav.textContent = 'このターンは、こちらのスコアにも到達できます。';
+    alternatives.forEach(row=>{
+      const link = document.createElement('a');
+      link.href = '#' + row.id;
+      link.textContent = row.dataset.alternativeScore + '点の候補を見る ↓';
+      nav.append(link);
+    });
+    resultDiv.firstElementChild.after(nav);
+  }
   attachTwoTurnPlanToggle();
   attachHundredRowToggle();
   attachGuaranteedGoldRowToggle();
